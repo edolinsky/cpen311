@@ -42,13 +42,13 @@ enum {P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SCORE} curre
 							end
 						else							// evaluate this set if third player card has been dealt
 							begin
-								if ((dscore == 6) && (6 <= pscore) && (pscore <= 7))			// give dealer a card if any of these statements are true; 1
+								if ((dscore == 6) && (6 <= pcard3) && (pcard3 <= 7))			// give dealer a card if any of these statements are true; 1
 									next_state = D_CARD3;								
-								else if ((dscore == 5) && (4 <= pscore) && (pscore <= 7))   // 2
+								else if ((dscore == 5) && (4 <= pcard3) && (pcard3 <= 7))   // 2
 									next_state = D_CARD3;								
-								else if ((dscore == 4) && (2 <= pscore) && (pscore <= 7))	// 3
+								else if ((dscore == 4) && (2 <= pcard3) && (pcard3 <= 7))	// 3
 									next_state = D_CARD3;								
-								else if ((dscore == 3) && (pscore != 8))							// 4
+								else if ((dscore == 3) && (pcard3 != 8))							// 4
 									next_state = D_CARD3;
 								else if (dscore <= 2)													// 5
 									next_state = D_CARD3;
