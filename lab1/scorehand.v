@@ -9,7 +9,7 @@ module scorehand (card1, card2, card3, total);
 // on representing numbers in Slide Set 2.
 
 	always_comb
-		total = (card1 + card2 + card3) % 2'd10;
+		total <= (card1 + card2 + card3) % 10;
 
 endmodule
 	
