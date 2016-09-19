@@ -82,133 +82,47 @@ enum {P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SCORE} curre
 			else
 				
 				current_state <= next_state;
-			
+				
+				load_pcard1 <= 0;		// default state: no cards, no lights
+				load_pcard2 <= 0;
+				load_pcard3 <= 0;
+				
+				load_dcard1 <= 0;
+				load_dcard2 <= 0;
+				load_dcard3 <= 0;
+				
+				dealer_win_light <= 0;
+				player_win_light <= 0;
+				
 				begin
 					case (current_state)
 						P_CARD1:							// load player's first card
-							begin
 								load_pcard1 <= 1;
-								load_pcard2 <= 0;
-								load_pcard3 <= 0;
-								
-								load_dcard1 <= 0;
-								load_dcard2 <= 0;
-								load_dcard3 <= 0;
-								
-								dealer_win_light <= 0;	// no lights
-								player_win_light <= 0;
-							end
 						D_CARD1:							// load dealer's first card	
-							begin
-								load_pcard1 <= 0;
-								load_pcard2 <= 0;
-								load_pcard3 <= 0;
-								
 								load_dcard1 <= 1;
-								load_dcard2 <= 0;
-								load_dcard3 <= 0;
-								
-								dealer_win_light <= 0;	// no lights
-								player_win_light <= 0;
-							end
 						P_CARD2:							// load player's second card
-							begin
-								load_pcard1 <= 0;
 								load_pcard2 <= 1;
-								load_pcard3 <= 0;
-								
-								load_dcard1 <= 0;
-								load_dcard2 <= 0;
-								load_dcard3 <= 0;
-								
-								dealer_win_light <= 0;	// no lights
-								player_win_light <= 0;
-							end
 						D_CARD2:							// load dealer's second card
-							begin
-								load_pcard1 <= 0;
-								load_pcard2 <= 0;
-								load_pcard3 <= 0;
-								
-								load_dcard1 <= 0;
 								load_dcard2 <= 1;
-								load_dcard3 <= 0;
-							
-								dealer_win_light <= 0;	// no lights	
-								player_win_light <= 0;
-							end
 						P_CARD3:							// load player's third card	
-							begin
-								load_pcard1 <= 0;
-								load_pcard2 <= 0;
 								load_pcard3 <= 1;
-								
-								load_dcard1 <= 0;
-								load_dcard2 <= 0;
-								load_dcard3 <= 0;
-								
-								dealer_win_light <= 0;	// no lights
-								player_win_light <= 0;
-							end
 						D_CARD3:							// load dealer's third card
-							begin
-								load_pcard1 <= 0;
-								load_pcard2 <= 0;
-								load_pcard3 <= 0;
-								
-								load_dcard1 <= 0;
-								load_dcard2 <= 0;
 								load_dcard3 <= 1;
-								
-								dealer_win_light <= 0;	// no lights
-								player_win_light <= 0;
-							end
 						SCORE:							// evaluate score
 							begin
 								
 								if (pscore > dscore)			// if player wins, 
-									begin
-										load_pcard1 <= 0;			// load no cards
-										load_pcard2 <= 0;
-										load_pcard3 <= 0;
-										
-										load_dcard1 <= 0;
-										load_dcard2 <= 0;
-										load_dcard3 <= 0;
-										
 										player_win_light <= 1;	// player light on
-										dealer_win_light <= 0;
-									end
 								else if (pscore < dscore)	// if dealer wins,
-									begin
-										load_pcard1 <= 0;			// load no cards
-										load_pcard2 <= 0;
-										load_pcard3 <= 0;
-										
-										load_dcard1 <= 0;
-										load_dcard2 <= 0;
-										load_dcard3 <= 0;
-											
-										player_win_light <= 0;	// dealer light on
-										dealer_win_light <= 1;
-									end
+										dealer_win_light <= 1;	// dealer light on
 								else								// otherwise, tie
 									begin
-										load_pcard1 <= 0;			// load no cards
-										load_pcard2 <= 0;
-										load_pcard3 <= 0;
-										
-										load_dcard1 <= 0;
-										load_dcard2 <= 0;
-										load_dcard3 <= 0;
-										
 										player_win_light <= 1;	// dealer and player lights on
 										dealer_win_light <= 1;
 									end
 							end
 						default:							// no cards, lights on invalid cases
 							begin
-							
 								load_pcard1 <= 0;
 								load_pcard2 <= 0;
 								load_pcard3 <= 0;
