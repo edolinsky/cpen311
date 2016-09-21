@@ -17,7 +17,6 @@ output load_dcard1, load_dcard2, load_dcard3;
 
 enum {NEW_GAME, P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SCORE} current_state, next_state;
 
-
 /*
 	STATE TRANSITION LOGIC
 */
@@ -112,8 +111,6 @@ enum {NEW_GAME, P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SC
 					led_array[9:8] = result;
 					led_array[7:4] = dscore;
 					led_array[3:0] = pscore;
-					
-
 				
 					case (current_state)
 						NEW_GAME:
