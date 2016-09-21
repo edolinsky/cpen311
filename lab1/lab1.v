@@ -57,17 +57,21 @@ datapath dp (.slow_clock(slow_clock),
 assign LEDR = led_array;
 always_comb
 begin
-	if (betting == 1)
-	begin
-		led_array[9:8] = bet_in;
-		led_array[7:0] = balance - wager_in;
-	end
+	if (resetb == 0)
+		begin
+			led_array[9:0] = 9'b000000000;
+		end
+	else if (betting == 1)
+		begin
+			led_array[9:8] = bet_in;
+			led_array[7:0] = balance - wager_in;
+		end
 	else
-	begin
-		led_array[3:0] = pscore;
-		led_array[7:4] = dscore;
-		led_array[9:8] = result;
-	end
+		begin
+			led_array[3:0] = pscore;
+			led_array[7:4] = dscore;
+			led_array[9:8] = result;
+		end
 end
 
 // instantiate the state machine

@@ -22,19 +22,15 @@ enum {NEW_GAME, P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SC
 		begin
 			case (current_state)
 				NEW_GAME:
-					begin
 						next_state = P_CARD1;
-					end
 				P_CARD1: 
-					begin
 						next_state = D_CARD1;		// deal dealer first card
-					end
 				D_CARD1: 				
 					next_state = P_CARD2; 		// deal player second card
 				P_CARD2: 				
 					next_state = D_CARD2; 		// deal dealer second card
 				D_CARD2: 
-						next_state = DECIDE;		// enter decision logic after dealer's second card is dealt
+					next_state = DECIDE;		// enter decision logic after dealer's second card is dealt
 				DECIDE:
 					begin
 						if (pcard3 == 0)			// evaluate this set if third player card has not yet been dealt
@@ -73,7 +69,7 @@ enum {NEW_GAME, P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SC
 				D_CARD3: 						// both players have 3 cards: score
 					next_state = SCORE;								
 				SCORE: 							// do nothing when game is finished, until reset button is pressed
-					next_state = SCORE;					
+					next_state = NEW_GAME;					
 				default: 						// reset if invalid state (should not happen)
 					next_state = NEW_GAME;								
 			endcase
@@ -86,11 +82,13 @@ enum {NEW_GAME, P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SC
 		begin
 			
 			if (resetb == 0)						// if reset button is pressed, start from beginning   
-				current_state <= P_CARD1;
+				begin
+					current_state <= NEW_GAME;
+				end
 			else
 				begin
 					current_state <= next_state;
-					betting = 0;
+					betting <= 0;
 					
 					load_pcard1 <= 0;		// default state: no cards, no lights
 					load_pcard2 <= 0;
@@ -130,6 +128,21 @@ enum {NEW_GAME, P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SC
 										result <= 2'b10;
 								else								// otherwise, tie
 										result <= 2'b11;
+							end
+						default:
+							begin
+								betting <= 0;
+					
+								load_pcard1 <= 0;		// default state: no cards, no lights
+								load_pcard2 <= 0;
+								load_pcard3 <= 0;
+								
+								load_dcard1 <= 0;
+								load_dcard2 <= 0;
+								load_dcard3 <= 0;
+								
+								load_wager <= 0;
+								result <= 0;
 							end
 					endcase
 				end
