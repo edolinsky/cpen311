@@ -1,14 +1,12 @@
 module statemachine ( slow_clock, resetb, result, betting,
                       dscore, pscore, pcard3, load_wager,
-                      load_pcard1, load_pcard2,load_pcard3,
+                      load_pcard1, load_pcard2, load_pcard3,
                       load_dcard1, load_dcard2, load_dcard3,
-							 led_array, bet_in, balance);
+							 bet_in);
 							 
 input slow_clock, resetb;
 input [3:0] dscore, pscore, pcard3;
-input [7:0] balance;
 input [1:0] bet_in;
-output [9:0] led_array;
 output [1:0] result;
 output load_wager;
 output betting;
@@ -22,17 +20,13 @@ enum {NEW_GAME, P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SC
 */
 	always_comb
 		begin
-			betting = 0; // default
-
 			case (current_state)
 				NEW_GAME:
 					begin
 						next_state = P_CARD1;
-						betting = 1;
 					end
 				P_CARD1: 
 					begin
-						betting = 0;
 						next_state = D_CARD1;		// deal dealer first card
 					end
 				D_CARD1: 				
@@ -96,6 +90,7 @@ enum {NEW_GAME, P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SC
 			else
 				begin
 					current_state <= next_state;
+					betting = 0;
 					
 					load_pcard1 <= 0;		// default state: no cards, no lights
 					load_pcard2 <= 0;
@@ -107,17 +102,12 @@ enum {NEW_GAME, P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SC
 					
 					load_wager <= 0;
 					result <= 0;
-					
-					led_array[9:8] = result;
-					led_array[7:4] = dscore;
-					led_array[3:0] = pscore;
 				
 					case (current_state)
 						NEW_GAME:
 							begin
 								load_wager <= 1;
-								led_array[9:8] <= bet_in;
-								led_array[7:0] <= balance;
+								betting <= 1;
 							end
 						P_CARD1:							// load player's first card
 							load_pcard1 <= 1;
