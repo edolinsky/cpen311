@@ -2,11 +2,13 @@ module statemachine ( slow_clock, resetb, result, betting,
                       dscore, pscore, pcard3, load_wager,
                       load_pcard1, load_pcard2, load_pcard3,
                       load_dcard1, load_dcard2, load_dcard3,
-							 bet_in);
+							 bet_in, balance, wager_in);
 							 
 input slow_clock, resetb;
 input [3:0] dscore, pscore, pcard3;
 input [1:0] bet_in;
+input [7:0] balance;
+input [7:0] wager_in;
 output [1:0] result;
 output load_wager;
 output betting;
@@ -22,9 +24,14 @@ enum {NEW_GAME, P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SC
 		begin
 			case (current_state)
 				NEW_GAME:
-						next_state = P_CARD1;
+					begin
+						if (wager_in > balance) // Player cannot play if there is no money in the bank or betting more than  what is in the balance
+							next_state = NEW_GAME;
+						else
+							next_state = P_CARD1;
+					end
 				P_CARD1: 
-						next_state = D_CARD1;		// deal dealer first card
+					next_state = D_CARD1;		// deal dealer first card
 				D_CARD1: 				
 					next_state = P_CARD2; 		// deal player second card
 				P_CARD2: 				

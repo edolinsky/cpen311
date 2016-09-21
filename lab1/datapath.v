@@ -50,7 +50,7 @@ reg2 bet(.clk(slow_clock), .reset(resetb), .load(load_wager), .in(bet_in), .out(
 reg8 wager(.clk(slow_clock), .reset(resetb), .load(load_wager), .in(wager_in), .out(wager_out),
 .reset_val(8'b00000000));
 reg8 balance(.clk(slow_clock), .reset(resetb), .load(load_balance), .in(balance_in), .out(balance_out),
-.reset_val(8'b1100100));
+.reset_val(8'b10000));
 
 always_comb
 	begin
@@ -58,20 +58,40 @@ always_comb
 	end
 	
 always_ff
-	if (bet_out == result) 
-	begin
-		if (bet_out == 2'b11)
-			balance_in = balance_out + (8 * wager_out);
-		else
-			balance_in = balance_out + wager_out;
-	end
-	else
-	begin
-		if (bet_out == 2'b11)
-			balance_in = balance_out;
-		else
-			balance_in = balance_out - wager_out;
-	end
+	if (bet_out == 2'b00)	// Do not change balance if player has not bet
+		balance_in = balance_out;
+	else							// If player has bet, calculate new balance
+		begin
+			if (bet_out == result) 									// Successful Bet
+				begin
+					if (bet_out == 2'b11)									// if bet on a tie
+						begin
+							if (balance_out + (8 * wager_out) < 256)			// 8 to 1 return, ceil to 8-bit max
+								balance_in = balance_out + (8 * wager_out);
+							else
+								balance_in = 255;
+						end
+					else
+						begin
+							if (balance_out + wager_out < 256)				// 1 to 1 return if betting on player or dealer alone
+								balance_in = balance_out + wager_out;
+							else
+								balance_in = 255;									// ceil to 8-bit max
+						end
+				end
+			else															// Unsuccessful bet
+				begin
+					if (bet_out == 2'b11)									// if bet on tie, do not change balance
+						balance_in = balance_out;
+					else
+						begin
+							if (balance_out >= wager_out)						// otherwise, 1 to 1 loss, floored to 0  if below 0.
+								balance_in = balance_out - wager_out;
+							else
+								balance_in = 0;
+						end
+				end
+		end
 
 assign pcard3_out = pcard3;
 

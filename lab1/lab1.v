@@ -59,8 +59,13 @@ always_comb
 begin
 	if (betting == 1)
 		begin
-			led_array[9:8] = bet_in;
-			led_array[7:0] = balance - wager_in;
+			if (wager_in <= balance)
+				begin
+					led_array[9:8] = bet_in;
+					led_array[7:0] = balance - wager_in;
+				end
+			else
+				led_array[9:0] = 10'b1111111111;
 		end
 	else
 		begin
@@ -80,6 +85,8 @@ statemachine sm (.slow_clock(slow_clock),
                  .pscore(pscore),
                  .pcard3(pcard3),
 					  .bet_in(bet_in),
+					  .balance(balance),
+					  .wager_in(wager_in),
                  .load_pcard1(load_pcard1),
                  .load_pcard2(load_pcard2),
                  .load_pcard3(load_pcard3),						  
