@@ -1,16 +1,21 @@
-module statemachine ( slow_clock, resetb,
-                      dscore, pscore, pcard3,
+module statemachine ( slow_clock, resetb, result, betting,
+                      dscore, pscore, pcard3, load_wager,
                       load_pcard1, load_pcard2,load_pcard3,
                       load_dcard1, load_dcard2, load_dcard3,
-                      player_win_light, dealer_win_light);
+							 led_array, bet_in, balance);
 							 
 input slow_clock, resetb;
 input [3:0] dscore, pscore, pcard3;
+input [7:0] balance;
+input [1:0] bet_in;
+output [9:0] led_array;
+output [1:0] result;
+output load_wager;
+output betting;
 output load_pcard1, load_pcard2, load_pcard3;
 output load_dcard1, load_dcard2, load_dcard3;
-output player_win_light, dealer_win_light;
 
-enum {P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SCORE} current_state, next_state;
+enum {NEW_GAME, P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SCORE} current_state, next_state;
 
 
 /*
@@ -18,9 +23,19 @@ enum {P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SCORE} curre
 */
 	always_comb
 		begin
+			betting = 0; // default
+
 			case (current_state)
+				NEW_GAME:
+					begin
+						next_state = P_CARD1;
+						betting = 1;
+					end
 				P_CARD1: 
-					next_state = D_CARD1;		// deal dealer first card
+					begin
+						betting = 0;
+						next_state = D_CARD1;		// deal dealer first card
+					end
 				D_CARD1: 				
 					next_state = P_CARD2; 		// deal player second card
 				P_CARD2: 				
@@ -67,7 +82,7 @@ enum {P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SCORE} curre
 				SCORE: 							// do nothing when game is finished, until reset button is pressed
 					next_state = SCORE;					
 				default: 						// reset if invalid state (should not happen)
-					next_state = P_CARD1;								
+					next_state = NEW_GAME;								
 			endcase
 		end
 		
@@ -80,59 +95,54 @@ enum {P_CARD1, D_CARD1, P_CARD2, D_CARD2, DECIDE, P_CARD3, D_CARD3, SCORE} curre
 			if (resetb == 0)						// if reset button is pressed, start from beginning   
 				current_state <= P_CARD1;
 			else
-				
-				current_state <= next_state;
-				
-				load_pcard1 <= 0;		// default state: no cards, no lights
-				load_pcard2 <= 0;
-				load_pcard3 <= 0;
-				
-				load_dcard1 <= 0;
-				load_dcard2 <= 0;
-				load_dcard3 <= 0;
-				
-				dealer_win_light <= 0;
-				player_win_light <= 0;
-				
 				begin
+					current_state <= next_state;
+					
+					load_pcard1 <= 0;		// default state: no cards, no lights
+					load_pcard2 <= 0;
+					load_pcard3 <= 0;
+					
+					load_dcard1 <= 0;
+					load_dcard2 <= 0;
+					load_dcard3 <= 0;
+					
+					load_wager <= 0;
+					result <= 0;
+					
+					led_array[9:8] = result;
+					led_array[7:4] = dscore;
+					led_array[3:0] = pscore;
+					
+
+				
 					case (current_state)
+						NEW_GAME:
+							begin
+								load_wager <= 1;
+								led_array[9:8] <= bet_in;
+								led_array[7:0] <= balance;
+							end
 						P_CARD1:							// load player's first card
-								load_pcard1 <= 1;
+							load_pcard1 <= 1;
 						D_CARD1:							// load dealer's first card	
-								load_dcard1 <= 1;
+							load_dcard1 <= 1;
 						P_CARD2:							// load player's second card
-								load_pcard2 <= 1;
+							load_pcard2 <= 1;
 						D_CARD2:							// load dealer's second card
-								load_dcard2 <= 1;
+							load_dcard2 <= 1;
 						P_CARD3:							// load player's third card	
-								load_pcard3 <= 1;
+							load_pcard3 <= 1;
 						D_CARD3:							// load dealer's third card
-								load_dcard3 <= 1;
+							load_dcard3 <= 1;
 						SCORE:							// evaluate score
 							begin
 								
-								if (pscore > dscore)			// if player wins, 
-										player_win_light <= 1;	// player light on
+								if (pscore > dscore)			// if player wins,
+										result <= 2'b01;
 								else if (pscore < dscore)	// if dealer wins,
-										dealer_win_light <= 1;	// dealer light on
+										result <= 2'b10;
 								else								// otherwise, tie
-									begin
-										player_win_light <= 1;	// dealer and player lights on
-										dealer_win_light <= 1;
-									end
-							end
-						default:							// no cards, lights on invalid cases
-							begin
-								load_pcard1 <= 0;
-								load_pcard2 <= 0;
-								load_pcard3 <= 0;
-								
-								load_dcard1 <= 0;
-								load_dcard2 <= 0;
-								load_dcard3 <= 0;
-								
-								player_win_light <= 0;
-								dealer_win_light <= 0;
+										result <= 2'b11;
 							end
 					endcase
 				end
