@@ -24,7 +24,6 @@ assign slow_clock = KEY[0];
 assign fast_clock = CLOCK_50;
 assign bet_in = SW[9:8];
 assign wager_in = SW[7:0];
-assign led_array = LEDR[9:0];
 
 // instantiate the datapath
 	
@@ -51,7 +50,8 @@ datapath dp (.slow_clock(slow_clock),
              .HEX1(HEX1),
              .HEX0(HEX0));
 		 
-
+assign LEDR[9:0] = led_array;
+		 
 // instantiate the state machine
 	
 statemachine sm (.slow_clock(slow_clock),

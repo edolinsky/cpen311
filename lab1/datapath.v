@@ -72,7 +72,6 @@ always_ff
 		else
 			balance_in = balance_out - wager_out;
 	end
-	
 
 assign pcard3_out = pcard3;
 
