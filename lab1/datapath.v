@@ -23,8 +23,7 @@ wire [3:0] new_card;
 wire [3:0] pcard1, pcard2, pcard3, dcard1, dcard2, dcard3;
 wire [7:0] wager_out;
 wire [7:0] balance_in;
-wire [1:0] bet_in;
-wire [1:0] bet_out;
+wire [1:0] bet_in, bet_out;
 wire load_balance;
 
 dealcard dealcard (.clock(fast_clock), .resetb(resetb), .new_card(new_card));

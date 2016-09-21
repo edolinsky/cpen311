@@ -57,11 +57,7 @@ datapath dp (.slow_clock(slow_clock),
 assign LEDR = led_array;
 always_comb
 begin
-	if (resetb == 0)
-		begin
-			led_array[9:0] = 9'b000000000;
-		end
-	else if (betting == 1)
+	if (betting == 1)
 		begin
 			led_array[9:8] = bet_in;
 			led_array[7:0] = balance - wager_in;
