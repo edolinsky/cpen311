@@ -81,7 +81,7 @@ always_ff
 				end
 			else															// Unsuccessful bet
 				begin
-					if (bet_out == 2'b11)									// if bet on tie, do not change balance
+					if (result == 2'b11)									// if result was a tie, do not change balance
 						balance_in = balance_out;
 					else
 						begin
