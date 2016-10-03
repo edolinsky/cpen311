@@ -5,7 +5,7 @@ module task2 (CLOCK_50,
        VGA_VS,             
        VGA_BLANK,           
        VGA_SYNC,            
-       VGA_CLK,
+       VGA_CLK);
   
 input CLOCK_50;
 input [3:0] KEY;
