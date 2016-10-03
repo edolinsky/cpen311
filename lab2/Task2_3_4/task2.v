@@ -6,7 +6,6 @@ module task2 (CLOCK_50,
        VGA_BLANK,           
        VGA_SYNC,            
        VGA_CLK,
-		 LEDR);
   
 input CLOCK_50;
 input [3:0] KEY;
@@ -16,7 +15,6 @@ output VGA_VS;
 output VGA_BLANK;           
 output VGA_SYNC;            
 output VGA_CLK;
-output [14:0] LEDR;
 
 // Some constants that might be useful for you
 
