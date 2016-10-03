@@ -1,5 +1,3 @@
-
-
 module task2 (CLOCK_50, 
 		 KEY,             
        VGA_R, VGA_G, VGA_B, 
@@ -7,7 +5,8 @@ module task2 (CLOCK_50,
        VGA_VS,             
        VGA_BLANK,           
        VGA_SYNC,            
-       VGA_CLK);
+       VGA_CLK,
+		 LEDR);
   
 input CLOCK_50;
 input [3:0] KEY;
@@ -17,6 +16,7 @@ output VGA_VS;
 output VGA_BLANK;           
 output VGA_SYNC;            
 output VGA_CLK;
+output [14:0] LEDR;
 
 // Some constants that might be useful for you
 
@@ -30,11 +30,11 @@ parameter YELLOW = 3'b110;
 parameter RED = 3'b100;
 parameter WHITE = 3'b111;
 
-  // To VGA adapter
+// To VGA adapter
   
 wire resetn;
-wire [7:0] x;
-wire [6:0] y;
+reg [7:0] x;
+reg [6:0] y;
 reg [2:0] colour;
 reg plot;
    
@@ -57,8 +57,71 @@ vga_adapter #( .RESOLUTION("160x120"))
 			   .VGA_CLK(VGA_CLK));
 
 
-// Your code to fill the screen goes here.  
+// Your code to fill the screen goes here.
+assign resetn = KEY[3];
+
+reg current_state, next_state;
+reg initx, inity, loadx, loady;
+reg xdone, ydone;
+
+// output logic
+always_comb
+begin
+case (current_state)
+	2'b00: {initx,inity,loady,loadx,plot} <= 5'b11110;
+	2'b01: {initx,inity,loady,loadx,plot} <= 5'b10110;
+	2'b10: {initx,inity,loady,loadx,plot} <= 5'b00011;
+	default: {initx,inity,loady,loadx,plot} <= 5'b00000;
+endcase
+end
+
+// next state
+always_ff @(posedge(CLOCK_50) or negedge resetn)
+begin
+	if (resetn == 0)
+		current_state <= 2'b00;
+	else
+		current_state <= next_state;
+end
+		
+// next state logic
+always_comb
+begin
+case (current_state)
+	2'b00: next_state <= 2'b10;
+	2'b01: next_state <= 2'b10;
+	2'b10: 
+	begin
+		if (xdone == 0) next_state <= 2'b10;
+		else if (ydone == 0) next_state <= 2'b01;
+		else next_state <= 2'b11;
+	end
+	default: next_state <= 2'b11;
+endcase
+end
+
+// datapath
+always_ff @(posedge(CLOCK_50))
+begin
+	if (loady == 1)
+		if (inity == 1)
+			y = 0;
+		else
+			y++;
+	if (loadx == 1)
+		if (initx == 1)
+			x = 0;
+		else
+			x++;
+	ydone <= 0;
+	xdone <= 0;
+	if (y == SCREEN_HEIGHT - 1)
+		ydone <= 1;
+	if (x == SCREEN_WIDTH - 1)
+		xdone <= 1;
+		
+	colour = BLUE;
+end
 
 endmodule
-
 
