@@ -77,7 +77,7 @@ case (current_state)
 	DRAW_LINE: {initx, inity, loady, loadx, plot, circle} <= 6'b000110; // draw line
 	CIRCLE_INIT: {initx, inity, loady, loadx, plot, circle} <= 6'b111101; // circle init
 	DRAW_SECTION: {initx, inity, loady, loadx, plot, circle} <= 6'b000011; // drawing loop
-	NEXT_SECTION: {initx, inity, loady, loadx, plot, circle} <= 6'b001101; // next loop
+	NEXT_SECTION: {initx, inity, loady, loadx, plot, circle} <= 6'b001111; // next loop
 	default: {initx, inity, loady, loadx, plot, circle} <= 6'b000000; // end
 endcase
 end
@@ -119,49 +119,57 @@ end
 always_ff @(posedge(CLOCK_50))
 begin
 	if (circle == 0)
+	begin
 		if (loady == 1)
+		begin
 			if (inity == 1)
 				y = 0;
 			else
 				y++;
+		end
 		if (loadx == 1)
+		begin
 			if (initx == 1)
 				x = 0;
 			else
 				x++;
+		end
+	end
 				
 	/////////////////////////
 	else
-	if (loady == 1)
 	begin
-		if (inity == 1)
+		if (loady == 1)
 		begin
-			centre_y = SCREEN_HEIGHT/2;
-			offset_y = 0;
+			if (inity == 1)
+			begin
+				centre_y = SCREEN_HEIGHT/2;
+				offset_y = 0;
+			end
+			else
+				offset_y++;
 		end
-		else
-			offset_y++;
-	end
-	if (loadx == 1)
-	begin
-		if (initx == 1)
+		if (loadx == 1)
 		begin
-			centre_x = SCREEN_WIDTH/2;
-			offset_x = RADIUS;
-			crit = 1 - RADIUS;
-		end
-		else
-		begin
-			if (crit <= 0)
-				crit = crit + (2 * offset_y) + 1;
+			if (initx == 1)
+			begin
+				centre_x = SCREEN_WIDTH/2;
+				offset_x = RADIUS;
+				crit = 1 - RADIUS;
+			end
 			else
 			begin
-				offset_x = offset_x -1;
-				crit = crit + (2 * (offset_y - offset_x)) + 1;
+				if (crit <= 0)
+					crit = crit + (2 * offset_y) + 1;
+				else
+				begin
+					offset_x = offset_x -1;
+					crit = crit + (2 * (offset_y - offset_x)) + 1;
+				end
 			end
 		end
 	end
-				
+	
 	ydone <= 0;
 	xdone <= 0;
 	if (circle == 0)
@@ -226,6 +234,7 @@ begin
 			end
 		endcase
 	end	
+	
 	colour = BLACK;
 	if (circle == 1)
 		colour = BLUE;
