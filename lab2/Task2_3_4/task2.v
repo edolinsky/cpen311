@@ -65,7 +65,7 @@ reg initx, inity, loadx, loady;
 reg xdone, ydone;
 reg circle;
 
-reg crit;
+int crit;
 reg [2:0] counter;
 
 // output logic
@@ -140,7 +140,7 @@ begin
 			offset_y = 0;
 		end
 		else
-			offset_y ++;
+			offset_y++;
 	end
 	if (loadx == 1)
 	begin
@@ -148,16 +148,16 @@ begin
 		begin
 			centre_x = SCREEN_WIDTH/2;
 			offset_x = RADIUS;
-			crit <= 1 - RADIUS;
+			crit = 1 - RADIUS;
 		end
 		else
 		begin
 			if (crit <= 0)
-				crit <= crit + (2 * offset_y) + 1;
+				crit = crit + (2 * offset_y) + 1;
 			else
 			begin
 				offset_x = offset_x -1;
-				crit <= crit + (2 * (offset_y - offset_x)) + 1;
+				crit = crit + (2 * (offset_y - offset_x)) + 1;
 			end
 		end
 	end
