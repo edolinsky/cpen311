@@ -31,8 +31,8 @@ parameter WHITE = 3'b111;
 // To VGA adapter
   
 wire resetn;
-reg [7:0] x;
-reg [6:0] y;
+wire [7:0] x;
+wire [6:0] y;
 reg [2:0] colour;
 reg plot;
    
@@ -58,7 +58,7 @@ vga_adapter #( .RESOLUTION("160x120"))
 // Your code to fill the screen goes here.
 assign resetn = KEY[3];
 
-reg current_state, next_state;
+reg [1:0] current_state, next_state;
 reg initx, inity, loadx, loady;
 reg xdone, ydone;
 
