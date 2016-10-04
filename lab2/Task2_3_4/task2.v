@@ -22,6 +22,7 @@ enum {FILL_INIT, DRAW_LINE, NEXT_LINE, CIRCLE_INIT, DRAW_SECTION, NEXT_SECTION, 
 
 parameter SCREEN_WIDTH = 160;
 parameter SCREEN_HEIGHT = 120;
+parameter RADIUS = 40;
 
 parameter BLACK = 3'b000;
 parameter BLUE = 3'b001;
@@ -132,41 +133,51 @@ begin
 	/////////////////////////
 	else
 	if (loady == 1)
+	begin
 		if (inity == 1)
 		begin
 			centre_y = SCREEN_HEIGHT/2;
 			offset_y = 0;
 		end
 		else
-			offset_y++;
+			offset_y ++;
+	end
 	if (loadx == 1)
+	begin
 		if (initx == 1)
 		begin
 			centre_x = SCREEN_WIDTH/2;
-			offset_x = 0;
+			offset_x = RADIUS;
+			crit <= 1 - RADIUS;
 		end
 		else
+		begin
 			if (crit <= 0)
-				crit = crit + 2 * offset_y + 1;
+				crit <= crit + (2 * offset_y) + 1;
 			else
 			begin
-				offset_x--;
-				crit = crit + 2 * (offset_y - offset_x) + 1;
+				offset_x = offset_x -1;
+				crit <= crit + (2 * (offset_y - offset_x)) + 1;
 			end
+		end
+	end
 				
 	ydone <= 0;
 	xdone <= 0;
 	if (circle == 0)
+	begin
 		if (y == SCREEN_HEIGHT - 1)
 			ydone <= 1;
 		if (x == SCREEN_WIDTH - 1)
 			xdone <= 1;
+	end
 	else
+	begin
 		if (counter == 3'b111)
 		begin
 			counter <= 3'b000;
 			xdone <= 1; // recycle
-			if (offset_y <= offset_x)
+			if (offset_y > offset_x)
 				ydone <= 1;
 		end
 		else
@@ -214,7 +225,7 @@ begin
 				y = centre_y - offset_x;
 			end
 		endcase
-		
+	end	
 	colour = BLACK;
 	if (circle == 1)
 		colour = BLUE;
