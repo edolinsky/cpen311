@@ -16,6 +16,8 @@ output VGA_BLANK;
 output VGA_SYNC;            
 output VGA_CLK;
 
+enum {FILL_INIT, DRAW_LINE, NEXT_LINE, CIRCLE_INIT, DRAW_SECTION, NEXT_SECTION, FINISHED} current_state, next_state;
+
 // Some constants that might be useful for you
 
 parameter SCREEN_WIDTH = 160;
@@ -31,8 +33,8 @@ parameter WHITE = 3'b111;
 // To VGA adapter
   
 wire resetn;
-wire [7:0] x;
-wire [6:0] y;
+wire [7:0] x, centre_x, offset_x;
+wire [6:0] y, centre_y, offset_y;
 reg [2:0] colour;
 reg plot;
    
@@ -58,18 +60,24 @@ vga_adapter #( .RESOLUTION("160x120"))
 // Your code to fill the screen goes here.
 assign resetn = KEY[3];
 
-reg [1:0] current_state, next_state;
 reg initx, inity, loadx, loady;
 reg xdone, ydone;
+reg circle;
+
+reg crit;
+reg [2:0] counter;
 
 // output logic
 always_comb
 begin
 case (current_state)
-	2'b00: {initx,inity,loady,loadx,plot} <= 5'b11110;
-	2'b01: {initx,inity,loady,loadx,plot} <= 5'b10110;
-	2'b10: {initx,inity,loady,loadx,plot} <= 5'b00011;
-	default: {initx,inity,loady,loadx,plot} <= 5'b00000;
+	FILL_INIT: {initx, inity, loady, loadx, plot, circle} <= 6'b111100; // fill init
+	NEXT_LINE: {initx, inity, loady, loadx, plot, circle} <= 6'b101100; // next line
+	DRAW_LINE: {initx, inity, loady, loadx, plot, circle} <= 6'b000110; // draw line
+	CIRCLE_INIT: {initx, inity, loady, loadx, plot, circle} <= 6'b111101; // circle init
+	DRAW_SECTION: {initx, inity, loady, loadx, plot, circle} <= 6'b000011; // drawing loop
+	NEXT_SECTION: {initx, inity, loady, loadx, plot, circle} <= 6'b001101; // next loop
+	default: {initx, inity, loady, loadx, plot, circle} <= 6'b000000; // end
 endcase
 end
 
@@ -77,7 +85,7 @@ end
 always_ff @(posedge(CLOCK_50) or negedge resetn)
 begin
 	if (resetn == 0)
-		current_state <= 2'b00;
+		current_state <= FILL_INIT;
 	else
 		current_state <= next_state;
 end
@@ -86,39 +94,130 @@ end
 always_comb
 begin
 case (current_state)
-	2'b00: next_state <= 2'b10;
-	2'b01: next_state <= 2'b10;
-	2'b10: 
+	FILL_INIT: next_state <= NEXT_LINE;
+	NEXT_LINE: next_state <= DRAW_LINE;
+	DRAW_LINE: 
 	begin
-		if (xdone == 0) next_state <= 2'b10;
-		else if (ydone == 0) next_state <= 2'b01;
-		else next_state <= 2'b11;
+		if (xdone == 0) next_state <= DRAW_LINE;
+		else if (ydone == 0) next_state <= NEXT_LINE;
+		else next_state <= CIRCLE_INIT;
 	end
-	default: next_state <= 2'b11;
+	CIRCLE_INIT: next_state <= DRAW_SECTION;
+	DRAW_SECTION:
+	begin
+		if(xdone == 0) next_state <= DRAW_SECTION;
+		else if (ydone == 0) next_state <= NEXT_SECTION;
+		else next_state <= FINISHED;
+	end
+	NEXT_SECTION: next_state <= DRAW_SECTION;
+	default: next_state <= FINISHED;
 endcase
 end
 
 // datapath
 always_ff @(posedge(CLOCK_50))
 begin
+	if (circle == 0)
+		if (loady == 1)
+			if (inity == 1)
+				y = 0;
+			else
+				y++;
+		if (loadx == 1)
+			if (initx == 1)
+				x = 0;
+			else
+				x++;
+				
+	/////////////////////////
+	else
 	if (loady == 1)
 		if (inity == 1)
-			y = 0;
+		begin
+			centre_y = SCREEN_HEIGHT/2;
+			offset_y = 0;
+		end
 		else
-			y++;
+			offset_y++;
 	if (loadx == 1)
 		if (initx == 1)
-			x = 0;
+		begin
+			centre_x = SCREEN_WIDTH/2;
+			offset_x = 0;
+		end
 		else
-			x++;
+			if (crit <= 0)
+				crit = crit + 2 * offset_y + 1;
+			else
+			begin
+				offset_x--;
+				crit = crit + 2 * (offset_y - offset_x) + 1;
+			end
+				
 	ydone <= 0;
 	xdone <= 0;
-	if (y == SCREEN_HEIGHT - 1)
-		ydone <= 1;
-	if (x == SCREEN_WIDTH - 1)
-		xdone <= 1;
+	if (circle == 0)
+		if (y == SCREEN_HEIGHT - 1)
+			ydone <= 1;
+		if (x == SCREEN_WIDTH - 1)
+			xdone <= 1;
+	else
+		if (counter == 3'b111)
+		begin
+			counter <= 3'b000;
+			xdone <= 1; // recycle
+			if (offset_y <= offset_x)
+				ydone <= 1;
+		end
+		else
+			counter <= counter + 1;
+			
+		case (counter)
+			3'b000:
+			begin
+				x = centre_x + offset_x;
+				y = centre_y + offset_y;
+			end
+			3'b001:
+			begin
+				x = centre_x + offset_y;
+				y = centre_y + offset_x;
+			end
+			3'b010:
+			begin
+				x = centre_x - offset_x;
+				y = centre_y + offset_y;
+			end
+			3'b011:
+			begin
+				x = centre_x - offset_y;
+				y = centre_y + offset_x;
+			end
+			3'b100:
+			begin
+				x = centre_x - offset_x;
+				y = centre_y - offset_y;
+			end
+			3'b101:
+			begin
+				x = centre_x - offset_y;
+				y = centre_y - offset_x;
+			end
+			3'b110:
+			begin
+				x = centre_x + offset_x;
+				y = centre_y - offset_y;
+			end
+			3'b111:
+			begin
+				x = centre_x + offset_y;
+				y = centre_y - offset_x;
+			end
+		endcase
 		
-	colour = BLUE;
+	colour = BLACK;
+	if (circle == 1)
+		colour = BLUE;
 end
 
 endmodule
