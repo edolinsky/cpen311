@@ -22,7 +22,9 @@ enum {FILL_INIT, DRAW_LINE, NEXT_LINE, CIRCLE_INIT, DRAW_SECTION, NEXT_SECTION, 
 
 parameter SCREEN_WIDTH = 160;
 parameter SCREEN_HEIGHT = 120;
-parameter RADIUS = 40;
+parameter RADIUS = 25;
+parameter OLYMPIC_Y_OFFSET = 14;
+parameter OLYMPIC_X_OFFSET = 27;
 
 parameter BLACK = 3'b000;
 parameter BLUE = 3'b001;
@@ -62,8 +64,9 @@ vga_adapter #( .RESOLUTION("160x120"))
 assign resetn = KEY[3];
 
 reg initx, inity, loadx, loady;
-reg xdone, ydone;
+reg xdone, ydone, olympicdone;
 reg circle;
+reg [2:0] olympic_count;
 
 int crit;
 reg [2:0] counter;
@@ -103,12 +106,18 @@ case (current_state)
 		else if (ydone == 0) next_state <= NEXT_LINE;
 		else next_state <= CIRCLE_INIT;
 	end
-	CIRCLE_INIT: next_state <= DRAW_SECTION;
+	CIRCLE_INIT: 
+	begin
+		if (olympic_count < 5)
+			next_state <= DRAW_SECTION;
+		else
+			next_state <= FINISHED;
+	end
 	DRAW_SECTION:
 	begin
 		if(xdone == 0) next_state <= DRAW_SECTION;
 		else if (ydone == 0) next_state <= NEXT_SECTION;
-		else next_state <= FINISHED;
+		else next_state <= CIRCLE_INIT;
 	end
 	NEXT_SECTION: next_state <= DRAW_SECTION;
 	default: next_state <= FINISHED;
@@ -143,7 +152,14 @@ begin
 		begin
 			if (inity == 1)
 			begin
-				centre_y = SCREEN_HEIGHT/2;
+				case (olympic_count)
+					3'd0: centre_y = SCREEN_HEIGHT / 2 - OLYMPIC_Y_OFFSET;
+					3'd1: centre_y = SCREEN_HEIGHT / 2 - OLYMPIC_Y_OFFSET;
+					3'd2: centre_y = SCREEN_HEIGHT / 2 - OLYMPIC_Y_OFFSET;
+					3'd3: centre_y = SCREEN_HEIGHT / 2 + OLYMPIC_Y_OFFSET;
+					3'd4: centre_y = SCREEN_HEIGHT / 2 + OLYMPIC_Y_OFFSET;
+					default: centre_y = SCREEN_HEIGHT / 2;
+				endcase
 				offset_y = 0;
 			end
 			else
@@ -153,9 +169,16 @@ begin
 		begin
 			if (initx == 1)
 			begin
-				centre_x = SCREEN_WIDTH/2;
 				offset_x = RADIUS;
 				crit = 1 - RADIUS;
+				case (olympic_count)
+					3'd0: centre_x = SCREEN_WIDTH / 2 - 2 * OLYMPIC_X_OFFSET;
+					3'd1: centre_x = SCREEN_WIDTH / 2;
+					3'd2:	centre_x = SCREEN_WIDTH / 2 + 2 * OLYMPIC_X_OFFSET;
+					3'd3: centre_x = SCREEN_WIDTH / 2 - OLYMPIC_X_OFFSET;
+					3'd4: centre_x = SCREEN_WIDTH / 2 + OLYMPIC_X_OFFSET;
+					default: centre_x = SCREEN_WIDTH / 2;
+				endcase
 			end
 			else
 			begin
@@ -170,6 +193,7 @@ begin
 		end
 	end
 	
+	olympicdone <= 0;
 	ydone <= 0;
 	xdone <= 0;
 	if (circle == 0)
@@ -186,7 +210,13 @@ begin
 			counter <= 3'b000;
 			xdone <= 1; // recycle
 			if (offset_y > offset_x)
+			begin
 				ydone <= 1;
+				olympic_count <= olympic_count + 1;
+				if (olympic_count >= 4)
+					olympicdone <= 1;
+			end
+					
 		end
 		else
 			counter <= counter + 1;
@@ -237,7 +267,14 @@ begin
 	
 	colour = BLACK;
 	if (circle == 1)
-		colour = BLUE;
+		case (olympic_count)
+			3'd0: colour = BLUE;
+			3'd1: colour = WHITE;
+			3'd2: colour = RED;
+			3'd3: colour = YELLOW;
+			3'd4: colour = GREEN;
+			default: colour = RED;
+		endcase
 end
 
 endmodule
