@@ -127,6 +127,12 @@ end
 // datapath
 always_ff @(posedge(CLOCK_50))
 begin
+	if (resetn == 0)
+	begin
+		olympic_count <= 3'b000;
+		colour = BLACK;
+	end
+
 	if (circle == 0)
 	begin
 		if (loady == 1)
