@@ -6,6 +6,8 @@
 //
 
 parameter DATA_WIDTH_COORD = 8;
+parameter FRAC_BITS = 8;
+parameter INT_BITS = 8;
 
 //
 // This file provides useful parameters and types for Lab 3.
@@ -14,21 +16,20 @@ parameter DATA_WIDTH_COORD = 8;
 parameter SCREEN_WIDTH = 160;
 parameter SCREEN_HEIGHT = 120;
 
+
 // Use the same precision for x and y as it simplifies life
 // A new type that describes a pixel location on the screen
-
-
 typedef struct {
-   reg [DATA_WIDTH_COORD-1:0] x;
-   reg [DATA_WIDTH_COORD-1:0] y;
+   reg [INT_BITS + FRAC_BITS-1:0] x;
+   reg [INT_BITS + FRAC_BITS-1:0] y;
 } point;
 
 // A new type that describes a velocity.  Each component of the
 // velocity can be either + or -, so use signed type
 
 typedef struct {
-   reg signed [DATA_WIDTH_COORD-1:0] x;
-   reg signed [DATA_WIDTH_COORD-1:0] y;
+   reg signed [INT_BITS + FRAC_BITS-1:0] x;
+   reg signed [INT_BITS + FRAC_BITS-1:0] y;
 } velocity;
   
   //Colours.  
@@ -69,18 +70,18 @@ parameter LEFT_LINE = 5;
 // These parameters describe the starting location for the puck 
 parameter FACEOFF_OFFSET = 10;
 
-parameter FACEOFF_X1 = SCREEN_WIDTH/2 + FACEOFF_OFFSET;
-parameter FACEOFF_Y1 = SCREEN_HEIGHT/2;
+parameter FACEOFF_X1 = {{SCREEN_WIDTH/2 - FACEOFF_OFFSET}, {8'd0}};
+parameter FACEOFF_Y1 = {{SCREEN_HEIGHT/2}, {8'd0}};
 
-parameter FACEOFF_X2 = SCREEN_WIDTH/2 - FACEOFF_OFFSET;
-parameter FACEOFF_Y2 = SCREEN_HEIGHT/2;
+parameter FACEOFF_X2 = {{SCREEN_WIDTH/2 + FACEOFF_OFFSET}, {8'd0}};
+parameter FACEOFF_Y2 = {{SCREEN_HEIGHT/2}, {8'd0}};
   
-// Starting Velocity
-parameter VELOCITY_START_X1 = 1;
-parameter VELOCITY_START_Y1 = -1;
+// Starting Velocity			  	
+parameter VELOCITY_START_X1 = {{8'b00000000}, {8'b11110110}}; // 0.96
+parameter VELOCITY_START_Y1 = {{8'b11111111}, {8'b11000000}}; // -0.25
 
-parameter VELOCITY_START_X2 = 1;
-parameter VELOCITY_START_Y2 = 1;
+parameter VELOCITY_START_X2 = {{8'b00000000}, {8'b11011100}}; // 0.86
+parameter VELOCITY_START_Y2 = {{8'b11111111}, {8'b10000000}}; // -0.5
   
 // This parameter indicates how many times the counter should count in the
 // START state between each invocation of the main loop of the program.

@@ -127,15 +127,15 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 		paddle_width <= INIT_PADDLE_WIDTH;
 		paddle_shrink_timer = 0;
       
-		puck1.x <= FACEOFF_X1[DATA_WIDTH_COORD-1:0];
-      puck1.y <= FACEOFF_Y1[DATA_WIDTH_COORD-1:0];
-      puck1_velocity.x <= VELOCITY_START_X1[DATA_WIDTH_COORD-1:0];
-      puck1_velocity.y <= VELOCITY_START_Y1[DATA_WIDTH_COORD-1:0];
+		puck1.x <= FACEOFF_X1[INT_BITS + FRAC_BITS-1:0];
+      puck1.y <= FACEOFF_Y1[INT_BITS + FRAC_BITS-1:0];
+      puck1_velocity.x <= VELOCITY_START_X1[INT_BITS + FRAC_BITS-1:0];
+      puck1_velocity.y <= VELOCITY_START_Y1[INT_BITS + FRAC_BITS-1:0];
 		
-		puck2.x <= FACEOFF_X2[DATA_WIDTH_COORD-1:0];
-      puck2.y <= FACEOFF_Y2[DATA_WIDTH_COORD-1:0];
-      puck2_velocity.x <= VELOCITY_START_X2[DATA_WIDTH_COORD-1:0];
-      puck2_velocity.y <= VELOCITY_START_Y2[DATA_WIDTH_COORD-1:0];
+		puck2.x <= FACEOFF_X2[INT_BITS + FRAC_BITS-1:0];
+      puck2.y <= FACEOFF_Y2[INT_BITS + FRAC_BITS-1:0];
+      puck2_velocity.x <= VELOCITY_START_X2[INT_BITS + FRAC_BITS-1:0];
+      puck2_velocity.y <= VELOCITY_START_Y2[INT_BITS + FRAC_BITS-1:0];
 		
       colour <= BLACK;
       plot <= 1'b1;
@@ -160,15 +160,15 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 				paddle_width <= INIT_PADDLE_WIDTH;
 				paddle_shrink_timer = 0;
 				
-            puck1.x <= FACEOFF_X1[DATA_WIDTH_COORD-1:0];
-            puck1.y <= FACEOFF_Y1[DATA_WIDTH_COORD-1:0];
-            puck1_velocity.x <= VELOCITY_START_X1[DATA_WIDTH_COORD-1:0];
-            puck1_velocity.y <= VELOCITY_START_Y1[DATA_WIDTH_COORD-1:0];
+            puck1.x <= FACEOFF_X1[INT_BITS + FRAC_BITS-1:0];
+            puck1.y <= FACEOFF_Y1[INT_BITS + FRAC_BITS-1:0];
+            puck1_velocity.x <= VELOCITY_START_X1[INT_BITS + FRAC_BITS-1:0];
+            puck1_velocity.y <= VELOCITY_START_Y1[INT_BITS + FRAC_BITS-1:0];
 				
-				puck2.x <= FACEOFF_X2[DATA_WIDTH_COORD-1:0];
-            puck2.y <= FACEOFF_Y2[DATA_WIDTH_COORD-1:0];
-            puck2_velocity.x <= VELOCITY_START_X2[DATA_WIDTH_COORD-1:0];
-            puck2_velocity.y <= VELOCITY_START_Y2[DATA_WIDTH_COORD-1:0];
+				puck2.x <= FACEOFF_X2[INT_BITS + FRAC_BITS-1:0];
+            puck2.y <= FACEOFF_Y2[INT_BITS + FRAC_BITS-1:0];
+            puck2_velocity.x <= VELOCITY_START_X2[INT_BITS + FRAC_BITS-1:0];
+            puck2_velocity.y <= VELOCITY_START_Y2[INT_BITS + FRAC_BITS-1:0];
 				
             colour <= BLACK;
             plot <= 1'b1;
@@ -421,39 +421,53 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 				  
 				  if (KEY[0] == 1'b0) begin
 				  
-				     // If the user has pressed the right button check to make sure we
-					  // are not already at the rightmost position of the screen
+						// If the user has pressed the right button check to make sure we
+						// are not already at the rightmost position of the screen
 					  
-				     if (paddle_x <= RIGHT_LINE - paddle_width - 2) begin 
-
-     					   // add 2 to the paddle position
-                  	paddle_x = paddle_x + 2'b10;
-
-					  end // if
+						if (paddle_width % 2 == 0) begin
+							if (paddle_x <= RIGHT_LINE - paddle_width - 2) begin 
+								// add 2 to the paddle position
+								paddle_x = paddle_x + 2'b10;
+							end
+						end else begin
+							if (paddle_x <= RIGHT_LINE - paddle_width - 3)begin
+								paddle_x = paddle_x + 2'b10;
+							end else if (paddle_x <= RIGHT_LINE - paddle_width - 2)begin
+								paddle_x = paddle_x + 2'b01;
+							end // if
+						end // if
 					  
-				     // If the user has pressed the right button check to make sure we
-					  // are not already at the rightmost position of the screen
+						// If the user has pressed the right button check to make sure we
+						// are not already at the rightmost position of the screen
 					  
 				  end else begin
-				     if (KEY[1] == 1'b0) begin 
+						if (KEY[1] == 1'b0) begin 
 					  
-				     // If the user has pressed the left button check to make sure we
-					  // are not already at the leftmost position of the screen
-				  
-				        if (paddle_x >= LEFT_LINE + 2) begin				 
-					        // subtract 2 from the paddle position 
-   				        paddle_x = paddle_x - 2'b10;						
-					     end //if
-					  end // if
-				  end //if 
+						// If the user has pressed the left button check to make sure we
+						// are not already at the leftmost position of the screen
+							
+							if (paddle_width & 2 == 0) begin
+								if (paddle_x >= LEFT_LINE + 2) begin				 
+									// subtract 2 from the paddle position 
+									paddle_x = paddle_x - 2'b10;						
+								end //if
+							end else begin
+								if (paddle_x >= LEFT_LINE + 3) begin
+									paddle_x = paddle_x - 2'b10;
+								end else if (paddle_x >= LEFT_LINE + 2)begin
+									paddle_x = paddle_x - 2'b01;
+								end // if
+							end // if
+						end // if
+					end //if 
 
               // In this state, draw the first element of the paddle	
 				  
-   		     draw.y <= PADDLE_ROW[DATA_WIDTH_COORD-1:0];				  
-				  draw.x <= paddle_x;  // get ready for next state			  
-              colour <= paddle_width - 3; // when we draw the paddle, the colour will be WHITE		  
-		        state <= DRAW_PADDLE_LOOP;
-            end // case DRAW_PADDLE_ENTER
+					draw.y <= PADDLE_ROW[DATA_WIDTH_COORD-1:0];				  
+					draw.x <= paddle_x;  // get ready for next state			  
+					colour <= paddle_width - 3; // when we draw the paddle, the colour will be WHITE		  
+					state <= DRAW_PADDLE_LOOP;
+				end // case DRAW_PADDLE_ENTER
 				
 		  // ============================================================
         // The DRAW_PADDLE_LOOP state will draw the rest of the paddle. 
@@ -492,30 +506,31 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
         ERASE_PUCK1:  begin
 				  colour <= BLACK;  // erase by setting colour to black
               plot <= 1'b1;
-				  draw <= puck1;  // the x and y lines are driven by "puck1" which 
+				  draw.x <= puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS];  // the x and y lines are driven by "puck1", stripped of its fractional components
+				  draw.y <= puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS];
 				                 // holds the location of the puck1.
 				  state <= DRAW_PUCK1;  // next state is DRAW_PUCK1.
 
-				  // update the location of the puck1 
-				  puck1.x = puck1.x + puck1_velocity.x;
-				  puck1.y = puck1.y + puck1_velocity.y;				  
+				  // update the location of the puck1, taking integer values of each of x, y
+				  puck1.x = puck1.x + puck1_velocity.x[INT_BITS + FRAC_BITS - 1:0];
+				  puck1.y = puck1.y + puck1_velocity.y[INT_BITS + FRAC_BITS - 1:0];				  
 				  
 				  // See if we have bounced off the top of the screen
-				  if (puck1.y == TOP_LINE + 1) begin
+				  if (puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == TOP_LINE + 1) begin
 				     puck1_velocity.y = 0-puck1_velocity.y;
 				  end // if
 
 				  // See if we have bounced off the right or left of the screen
-				  if ( (puck1.x == LEFT_LINE + 1) |
-				       (puck1.x == RIGHT_LINE - 1)) begin 
+				  if ( (puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == LEFT_LINE + 1) |
+				       (puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == RIGHT_LINE - 1)) begin 
 				     puck1_velocity.x = 0-puck1_velocity.x;
 				  end // if  
 		
               // See if we have bounced of the paddle on the bottom row of
 	           // the screen		
-		        if (puck1.y == PADDLE_ROW - 1) begin 
-				     if ((puck1.x >= paddle_x) &
-					      (puck1.x <= paddle_x + paddle_width)) begin
+		        if (puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == PADDLE_ROW - 1) begin 
+				     if ((puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] >= paddle_x) &
+					      (puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= paddle_x + paddle_width)) begin
 							
 					     // we have bounced off the paddle
    				     puck1_velocity.y = 0-puck1_velocity.y;				
@@ -534,7 +549,8 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
         DRAW_PUCK1: begin
 				  colour <= CYAN;
               plot <= 1'b1;
-				  draw <= puck1;
+				  draw.x <= puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS];
+				  draw.y <= puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS];
 				  state <= ERASE_PUCK2;	  // next state is ERASE_PUCK2		  
            end // case DRAW_PUCK1
 			  
@@ -548,30 +564,31 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
         ERASE_PUCK2:  begin
 				  colour <= BLACK;  // erase by setting colour to black
               plot <= 1'b1;
-				  draw <= puck2;  // the x and y lines are driven by "puck2" which 
+				  draw.x <= puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS];  // the x and y lines are driven by "puck2", stripped of its fractional components
+				  draw.y <= puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS];
 				                 // holds the location of the puck2.
 				  state <= DRAW_PUCK2;  // next state is DRAW_PUCK2.
 
 				  // update the location of the puck2 
-				  puck2.x = puck2.x + puck2_velocity.x;
-				  puck2.y = puck2.y + puck2_velocity.y;				  
+				  puck2.x = puck2.x + puck2_velocity.x[INT_BITS + FRAC_BITS - 1:0];
+				  puck2.y = puck2.y + puck2_velocity.y[INT_BITS + FRAC_BITS - 1:0];				  
 				  
 				  // See if we have bounced off the top of the screen
-				  if (puck2.y == TOP_LINE + 1) begin
+				  if (puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == TOP_LINE + 1) begin
 				     puck2_velocity.y = 0-puck2_velocity.y;
 				  end // if
 
 				  // See if we have bounced off the right or left of the screen
-				  if ( (puck2.x == LEFT_LINE + 1) |
-				       (puck2.x == RIGHT_LINE - 1)) begin 
+				  if ( (puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == LEFT_LINE + 1) |
+				       (puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == RIGHT_LINE - 1)) begin 
 				     puck2_velocity.x = 0-puck2_velocity.x;
 				  end // if  
 		
               // See if we have bounced of the paddle on the bottom row of
 	           // the screen		
-		        if (puck2.y == PADDLE_ROW - 1) begin 
-				     if ((puck2.x >= paddle_x) &
-					      (puck2.x <= paddle_x + paddle_width)) begin
+		        if (puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == PADDLE_ROW - 1) begin 
+				     if ((puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] >= paddle_x) &
+					      (puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= paddle_x + paddle_width)) begin
 							
 					     // we have bounced off the paddle
    				     puck2_velocity.y = 0-puck2_velocity.y;				
@@ -590,7 +607,8 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
         DRAW_PUCK2: begin
 				  colour <= YELLOW;
               plot <= 1'b1;
-				  draw <= puck2;
+				  draw.x <= puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS];
+				  draw.y <= puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS];
 				  state <= IDLE;	  // next state is IDLE (which is the delay state)			  
            end // case DRAW_PUCK1
 			  
