@@ -48,6 +48,8 @@ reg [2:0] colour;
 reg plot;
 reg [DATA_WIDTH_COORD-1:0] paddle_width;
 reg [7:0] paddle_shrink_timer;
+reg [7:0] top_shrink_timer;
+reg [6:0] top_line;
 point draw;
 
 // The state of our state machine
@@ -123,9 +125,11 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
       draw.x <= 0;
       draw.y <= 0;
 		
+		top_line = TOP_LINE_INIT;
       paddle_x <= PADDLE_X_START[DATA_WIDTH_COORD-1:0];
 		paddle_width <= INIT_PADDLE_WIDTH;
 		paddle_shrink_timer = 0;
+		top_shrink_timer = 0;
       
 		puck1.x <= FACEOFF_X1;
       puck1.y <= FACEOFF_Y1;
@@ -156,9 +160,11 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
             draw.x <= 0;
             draw.y <= 0;
 				
+				top_line = TOP_LINE_INIT;
             paddle_x <= PADDLE_X_START[DATA_WIDTH_COORD-1:0];
 				paddle_width <= INIT_PADDLE_WIDTH;
 				paddle_shrink_timer = 0;
+				top_shrink_timer = 0;
 				
             puck1.x <= FACEOFF_X1;
             puck1.y <= FACEOFF_Y1;
@@ -217,9 +223,18 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 		  // rest of the bar.
 		  // ============================================================
 		  
-		  DRAW_TOP_ENTER: begin				
+		  DRAW_TOP_ENTER: begin
+				  top_shrink_timer = top_shrink_timer + 1;
+				  
+				  if (top_shrink_timer >= TOP_SHRINK_SPEED) begin
+						top_shrink_timer = 0;
+						if (top_line >= SCREEN_HEIGHT / 2) begin
+							top_line = top_line + 1;
+						end // if
+				  end // if
+				  
 			     draw.x <= LEFT_LINE[DATA_WIDTH_COORD-1:0];
-				  draw.y <= TOP_LINE[DATA_WIDTH_COORD-1:0];
+				  draw.y <= top_line;
 				  colour <= WHITE;
 				  state <= DRAW_TOP_LOOP;
 			  end // case DRAW_TOP_ENTER
@@ -232,7 +247,6 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 		  // ============================================================
 		  
         DRAW_TOP_LOOP: begin	
-		  
            // See if we have been in this state long enough to have completed the line
     		  if (draw.x == RIGHT_LINE) begin
 			     // if so, the next state is DRAW_RIGHT_ENTER			  
@@ -240,7 +254,7 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
            end else begin
 				
 				  // Otherwise, update draw.x to point to the next pixel
-              draw.y <= TOP_LINE[DATA_WIDTH_COORD-1:0];
+              draw.y <= top_line;
               draw.x <= draw.x + 1'b1;
 				  
 				  // Do not change the state, since we want to come back to this state
@@ -258,7 +272,7 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 
 		  DRAW_RIGHT_ENTER: begin				
 			     draw.x <= RIGHT_LINE[DATA_WIDTH_COORD-1:0];
-				  draw.y <= TOP_LINE[DATA_WIDTH_COORD-1:0];
+				  draw.y <= top_line;
 				  state <= DRAW_RIGHT_LOOP;
 			  end // case DRAW_RIGHT_ENTER		  
    		  
@@ -293,7 +307,7 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 
 		  DRAW_LEFT_ENTER: begin				
 			     draw.x <= LEFT_LINE[DATA_WIDTH_COORD-1:0];
-				  draw.y <= TOP_LINE[DATA_WIDTH_COORD-1:0];
+				  draw.y <= top_line;
 				  state <= DRAW_LEFT_LOOP;
 			  end // case DRAW_LEFT_ENTER				  
    		  
@@ -519,8 +533,9 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 				  puck1.y = puck1.y + puck1_velocity.y[INT_BITS + FRAC_BITS - 1:0];				  
 				  
 				  // See if we have bounced off the top of the screen
-				  if (puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= TOP_LINE + 1) begin
+				  if (puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= top_line + 1) begin
 				     puck1_velocity.y = 0-puck1_velocity.y;
+					  puck.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] = top_line + 1;
 				  end // if
 
 				  // See if we have bounced off the right or left of the screen
@@ -581,8 +596,9 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 				  puck2.y = puck2.y + puck2_velocity.y[INT_BITS + FRAC_BITS - 1:0];				  
 				  
 				  // See if we have bounced off the top of the screen
-				  if (puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= TOP_LINE + 1) begin
+				  if (puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= top_line + 1) begin
 				     puck2_velocity.y = 0-puck2_velocity.y;
+					  puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] = top_line + 1;
 				  end // if
 
 				  // See if we have bounced off the right or left of the screen
