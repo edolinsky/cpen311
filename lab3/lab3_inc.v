@@ -75,6 +75,8 @@ parameter FACEOFF_Y1 = {{SCREEN_HEIGHT/2}, {8'd0}};
 
 parameter FACEOFF_X2 = {{SCREEN_WIDTH/2 + FACEOFF_OFFSET}, {8'd0}};
 parameter FACEOFF_Y2 = {{SCREEN_HEIGHT/2}, {8'd0}};
+
+parameter GRAVITY = {{8'b00000000}, {8'b00000001}}; // 0.0078125
   
 // Starting Velocity			  	
 parameter VELOCITY_START_X1 = {{8'b00000000}, {8'b11110110}}; // 0.96
@@ -91,6 +93,6 @@ parameter VELOCITY_START_Y2 = {{8'b11111111}, {8'b10000000}}; // -0.5
 // clocking our circuit with  a 50Mhz clock. 
   
 parameter LOOP_SPEED = 50000000/8;  // 8Hz
-parameter PADDLE_SHRINK_SPEED = 50000000 * 20;
+parameter PADDLE_SHRINK_SPEED = 8 * 20;
   
 `endif // _my_incl_vh_

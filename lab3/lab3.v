@@ -47,7 +47,7 @@ wire [6:0] y;
 reg [2:0] colour;
 reg plot;
 reg [DATA_WIDTH_COORD-1:0] paddle_width;
-reg [31:0] paddle_shrink_timer;
+reg [7:0] paddle_shrink_timer;
 point draw;
 
 // The state of our state machine
@@ -127,15 +127,15 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 		paddle_width <= INIT_PADDLE_WIDTH;
 		paddle_shrink_timer = 0;
       
-		puck1.x <= FACEOFF_X1[INT_BITS + FRAC_BITS-1:0];
-      puck1.y <= FACEOFF_Y1[INT_BITS + FRAC_BITS-1:0];
-      puck1_velocity.x <= VELOCITY_START_X1[INT_BITS + FRAC_BITS-1:0];
-      puck1_velocity.y <= VELOCITY_START_Y1[INT_BITS + FRAC_BITS-1:0];
+		puck1.x <= FACEOFF_X1;
+      puck1.y <= FACEOFF_Y1;
+      puck1_velocity.x <= VELOCITY_START_X1;
+      puck1_velocity.y <= VELOCITY_START_Y1;
 		
-		puck2.x <= FACEOFF_X2[INT_BITS + FRAC_BITS-1:0];
-      puck2.y <= FACEOFF_Y2[INT_BITS + FRAC_BITS-1:0];
-      puck2_velocity.x <= VELOCITY_START_X2[INT_BITS + FRAC_BITS-1:0];
-      puck2_velocity.y <= VELOCITY_START_Y2[INT_BITS + FRAC_BITS-1:0];
+		puck2.x <= FACEOFF_X2;
+      puck2.y <= FACEOFF_Y2;
+      puck2_velocity.x <= VELOCITY_START_X2;
+      puck2_velocity.y <= VELOCITY_START_Y2;
 		
       colour <= BLACK;
       plot <= 1'b1;
@@ -160,15 +160,15 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 				paddle_width <= INIT_PADDLE_WIDTH;
 				paddle_shrink_timer = 0;
 				
-            puck1.x <= FACEOFF_X1[INT_BITS + FRAC_BITS-1:0];
-            puck1.y <= FACEOFF_Y1[INT_BITS + FRAC_BITS-1:0];
-            puck1_velocity.x <= VELOCITY_START_X1[INT_BITS + FRAC_BITS-1:0];
-            puck1_velocity.y <= VELOCITY_START_Y1[INT_BITS + FRAC_BITS-1:0];
+            puck1.x <= FACEOFF_X1;
+            puck1.y <= FACEOFF_Y1;
+            puck1_velocity.x <= VELOCITY_START_X1;
+            puck1_velocity.y <= VELOCITY_START_Y1;
 				
-				puck2.x <= FACEOFF_X2[INT_BITS + FRAC_BITS-1:0];
-            puck2.y <= FACEOFF_Y2[INT_BITS + FRAC_BITS-1:0];
-            puck2_velocity.x <= VELOCITY_START_X2[INT_BITS + FRAC_BITS-1:0];
-            puck2_velocity.y <= VELOCITY_START_Y2[INT_BITS + FRAC_BITS-1:0];
+				puck2.x <= FACEOFF_X2;
+            puck2.y <= FACEOFF_Y2;
+            puck2_velocity.x <= VELOCITY_START_X2;
+            puck2_velocity.y <= VELOCITY_START_Y2;
 				
             colour <= BLACK;
             plot <= 1'b1;
@@ -407,6 +407,7 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 		  DRAW_PADDLE_ENTER: begin
 		  
 				  // shrink paddle every 20 seconds, until only 4 pixels long
+				  paddle_shrink_timer = paddle_shrink_timer + 1'b1; // increment shrink timer
 				  
 				  if (paddle_shrink_timer >= PADDLE_SHRINK_SPEED) begin
 						paddle_shrink_timer = 0;
@@ -510,30 +511,34 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 				  draw.y <= puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS];
 				                 // holds the location of the puck1.
 				  state <= DRAW_PUCK1;  // next state is DRAW_PUCK1.
-
+				  
+				  puck1_velocity.y = puck1_velocity.y + GRAVITY;	// account for downwards acceleration  due to gravity
+				  
 				  // update the location of the puck1, taking integer values of each of x, y
 				  puck1.x = puck1.x + puck1_velocity.x[INT_BITS + FRAC_BITS - 1:0];
 				  puck1.y = puck1.y + puck1_velocity.y[INT_BITS + FRAC_BITS - 1:0];				  
 				  
 				  // See if we have bounced off the top of the screen
-				  if (puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == TOP_LINE + 1) begin
+				  if (puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= TOP_LINE + 1) begin
 				     puck1_velocity.y = 0-puck1_velocity.y;
 				  end // if
 
 				  // See if we have bounced off the right or left of the screen
-				  if ( (puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == LEFT_LINE + 1) |
-				       (puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == RIGHT_LINE - 1)) begin 
+				  if ( (puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= LEFT_LINE + 1) |
+				       (puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] >= RIGHT_LINE - 1)) begin 
 				     puck1_velocity.x = 0-puck1_velocity.x;
 				  end // if  
 		
               // See if we have bounced of the paddle on the bottom row of
 	           // the screen		
-		        if (puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == PADDLE_ROW - 1) begin 
+		        if (puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] >= PADDLE_ROW - 1) begin 
 				     if ((puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] >= paddle_x) &
 					      (puck1.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= paddle_x + paddle_width)) begin
 							
 					     // we have bounced off the paddle
-   				     puck1_velocity.y = 0-puck1_velocity.y;				
+   				     puck1_velocity.y = 0-puck1_velocity.y;
+						  puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] = PADDLE_ROW - 1;
+						  
 				     end else begin
 				        // we are at the bottom row, but missed the paddle.  Reset game!
 					     state <= INIT;
@@ -568,30 +573,33 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 				  draw.y <= puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS];
 				                 // holds the location of the puck2.
 				  state <= DRAW_PUCK2;  // next state is DRAW_PUCK2.
+				  
+				  puck2_velocity.y = puck2_velocity.y + GRAVITY; // account for downwards acceleration due to gravity
 
 				  // update the location of the puck2 
 				  puck2.x = puck2.x + puck2_velocity.x[INT_BITS + FRAC_BITS - 1:0];
 				  puck2.y = puck2.y + puck2_velocity.y[INT_BITS + FRAC_BITS - 1:0];				  
 				  
 				  // See if we have bounced off the top of the screen
-				  if (puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == TOP_LINE + 1) begin
+				  if (puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= TOP_LINE + 1) begin
 				     puck2_velocity.y = 0-puck2_velocity.y;
 				  end // if
 
 				  // See if we have bounced off the right or left of the screen
-				  if ( (puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == LEFT_LINE + 1) |
-				       (puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == RIGHT_LINE - 1)) begin 
+				  if ( (puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= LEFT_LINE + 1) |
+				       (puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] >= RIGHT_LINE - 1)) begin 
 				     puck2_velocity.x = 0-puck2_velocity.x;
 				  end // if  
 		
               // See if we have bounced of the paddle on the bottom row of
 	           // the screen		
-		        if (puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] == PADDLE_ROW - 1) begin 
+		        if (puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] >= PADDLE_ROW - 1) begin 
 				     if ((puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] >= paddle_x) &
 					      (puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= paddle_x + paddle_width)) begin
 							
 					     // we have bounced off the paddle
-   				     puck2_velocity.y = 0-puck2_velocity.y;				
+   				     puck2_velocity.y = 0-puck2_velocity.y;
+						  puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] = PADDLE_ROW - 1;
 				     end else begin
 				        // we are at the bottom row, but missed the paddle.  Reset game!
 					     state <= INIT;
@@ -621,7 +629,6 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 	
 	
      endcase
-	  paddle_shrink_timer = paddle_shrink_timer + 1'b1; // increment shrink timer
 	 end // if
 	 
 endmodule
