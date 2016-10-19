@@ -8,6 +8,7 @@
 parameter DATA_WIDTH_COORD = 8;
 parameter FRAC_BITS = 8;
 parameter INT_BITS = 8;
+parameter FREQ_HZ = 8;
 
 //
 // This file provides useful parameters and types for Lab 3.
@@ -63,7 +64,7 @@ parameter PADDLE_X_START = SCREEN_WIDTH / 2;  // starting x position of the padd
 
 // These parameters describe the lines that are drawn around the  
 // border of the screen  
-parameter TOP_LINE = 4;
+parameter TOP_LINE_INIT = 4;
 parameter RIGHT_LINE = SCREEN_WIDTH - 5;
 parameter LEFT_LINE = 5;
 
@@ -92,7 +93,8 @@ parameter VELOCITY_START_Y2 = {{8'b11111111}, {8'b10000000}}; // -0.5
 // each invocation of the main loop.  The 50000000 is because we are
 // clocking our circuit with  a 50Mhz clock. 
   
-parameter LOOP_SPEED = 50000000/8;  // 8Hz
-parameter PADDLE_SHRINK_SPEED = 8 * 20;
+parameter LOOP_SPEED = 50000000/FREQ_HZ;  // 8Hz
+parameter PADDLE_SHRINK_SPEED = FREQ_HZ * 20;
+parameter TOP_SHRINK_SPEED = FREQ_HZ * 3;
   
 `endif // _my_incl_vh_

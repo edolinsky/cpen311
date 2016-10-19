@@ -228,7 +228,7 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 				  
 				  if (top_shrink_timer >= TOP_SHRINK_SPEED) begin
 						top_shrink_timer = 0;
-						if (top_line >= SCREEN_HEIGHT / 2) begin
+						if (top_line <= SCREEN_HEIGHT / 2) begin
 							top_line = top_line + 1;
 						end // if
 				  end // if
@@ -534,8 +534,10 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 				  
 				  // See if we have bounced off the top of the screen
 				  if (puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= top_line + 1) begin
-				     puck1_velocity.y = 0-puck1_velocity.y;
-					  puck.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] = top_line + 1;
+					  if (puck1_velocity.y < 0) begin
+							puck1_velocity.y = 0-puck1_velocity.y;
+					  end
+					  puck1.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] = top_line + 1;
 				  end // if
 
 				  // See if we have bounced off the right or left of the screen
@@ -597,7 +599,9 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
 				  
 				  // See if we have bounced off the top of the screen
 				  if (puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] <= top_line + 1) begin
-				     puck2_velocity.y = 0-puck2_velocity.y;
+					  if (puck2_velocity.y < 0) begin
+							puck2_velocity.y = 0-puck2_velocity.y;
+					  end
 					  puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS] = top_line + 1;
 				  end // if
 
@@ -633,7 +637,7 @@ always_ff @(posedge CLOCK_50, negedge KEY[3])
               plot <= 1'b1;
 				  draw.x <= puck2.x[INT_BITS + FRAC_BITS - 1:FRAC_BITS];
 				  draw.y <= puck2.y[INT_BITS + FRAC_BITS - 1:FRAC_BITS];
-				  state <= IDLE;	  // next state is IDLE (which is the delay state)			  
+				  state <= DRAW_TOP_ENTER;	  // next state is IDLE (which is the delay state)			  
            end // case DRAW_PUCK1
 			  
  		  // ============================================================
