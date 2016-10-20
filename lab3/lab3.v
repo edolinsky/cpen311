@@ -2,7 +2,7 @@
 							  
 ////////////////////////////////////////////////////////////////
 //
-//  This file is the starting point for Lab 3.  This design implements
+//  This design implements
 //  a simple pong game, with a paddle at the bottom and one ball that 
 //  bounces around the screen.  When downloaded to an FPGA board, 
 //  KEY(0) will move the paddle to right, and KEY(1) will move the 
@@ -10,18 +10,8 @@
 //  below the bottom of the screen without hitting the paddle, the game
 //  will reset.
 //
-//  This is written in a combined datapath/state machine style as
-//  discussed in the second half of Slide Set 7.  It looks like a 
-//  state machine, but the datapath operations that will be performed
-//  in each state are described within the corresponding WHEN clause
-//  of the state machine.  From this style, Quartus II will be able to
-//  extract the state machine from the design.
-//
-//  In Lab 3, you will modify this file as described in the handout.
-//
 //  This file makes extensive use of types and constants described in
-//  lab3_inc.v   Be sure to read and understand that file before
-//  trying to understand this one.
+//  lab3_inc.v
 // 
 ////////////////////////////////////////////////////////////////////////
 
@@ -39,7 +29,6 @@ output VGA_HS, VGA_VS;
 output VGA_BLANK, VGA_SYNC, VGA_CLK;
 
 // These are signals that will be connected to the VGA adapater.
-// The VGA adapater was described in the Lab 2 handout.
   
 reg resetn;
 wire [7:0] x;
@@ -61,7 +50,7 @@ reg [DATA_WIDTH_COORD-1:0] paddle_x;
 
 // These variables will store the puck and the puck velocity.
 // In this implementation, the puck velocity has two components: an x component
-// and a y component.  Each component is always +1 or -1.
+// and a y component.
 
 point puck1;
 velocity puck1_velocity;
@@ -73,12 +62,7 @@ velocity puck2_velocity;
 
 integer clock_counter = 0;
 
-// Be sure to see all the constants, types, etc. defined in lab3_inc.h
-
-// include the VGA controller structurally.  The VGA controller 
-// was decribed in Lab 2.  You probably know it in great detail now, but 
-// if you have forgotten, please go back and review the description of the 
-// VGA controller in Lab 2 before trying to do this lab.
+// include the VGA controller structurally.
 
 vga_adapter #( .RESOLUTION("160x120"))
     vga_u0 (.resetn(KEY[3]),
@@ -105,15 +89,7 @@ assign y = draw.y[6:0];
 
 
 // ============================================================================= 
-// This is the main loop.  As described above, it is written in a combined
-// state machine / datapath style.  It looks like a state machine, but rather
-// than simply driving control signals in each state, the description describes 
-// the datapath operations that happen in each state.  From this Quartus II
-// will figure out a suitable datapath for you.
-  
-// Notice that this is written as a pattern-3 process (sequential with an
-// asynchronous reset)
-
+// This is the main loop.
 
 
 always_ff @(posedge CLOCK_50, negedge KEY[3])

@@ -8,10 +8,12 @@
 parameter DATA_WIDTH_COORD = 8;
 parameter FRAC_BITS = 8;
 parameter INT_BITS = 8;
+
+// Rough frequency of update cycle, in Hz.
 parameter FREQ_HZ = 8;
 
 //
-// This file provides useful parameters and types for Lab 3.
+// Screen dimensions
 // 
 
 parameter SCREEN_WIDTH = 160;
@@ -89,7 +91,7 @@ parameter VELOCITY_START_Y2 = {{8'b11111111}, {8'b10000000}}; // -0.5
 // This parameter indicates how many times the counter should count in the
 // START state between each invocation of the main loop of the program.
 // A larger value will result in a slower game.  The current setting will    
-// cause the machine to wait in the start state for 1/8 of a second between 
+// cause the machine to wait in the start state for 1/FREQ_HZ of a second between 
 // each invocation of the main loop.  The 50000000 is because we are
 // clocking our circuit with  a 50Mhz clock. 
   
