@@ -7,12 +7,15 @@ output [9:0] LEDR;
 
 // states	
 
-enum {INIT, FILL, DONE} state;
+enum {INIT, FILL, READ_I, SHUFFLE_LOOP, SHUFFLE_WAIT, COMPUTE, COMPUTE_WAIT, WRITE_I, WRITE_J, DONE} state;
 
 // these are signals that connect to the memory
 
-reg [7:0] address, data, q;
+reg [23:0] secret_key;
+reg [7:0] address, data, q, i, j, data_i, data_j;
 reg wren;
+
+assign LEDR = secret_key[9:0];
 
 // include S memory structurally
 
@@ -37,6 +40,10 @@ always_ff @(posedge CLOCK_50) begin
 			address <= 8'd0;
 			data <= 8'd0;
 			wren <= 1'b1;
+			
+			i <= 8'd0;
+			j = 8'd0;
+			secret_key <= {{14'd0}, {SW}};
 			state <= FILL;
 		end // case INIT
 		
@@ -47,29 +54,69 @@ always_ff @(posedge CLOCK_50) begin
 		 */
 		FILL: begin
 			
-			if (address <= 8'd255) begin		// loop back in until done
+			if (address < 8'd255) begin		// loop back in until done
 				address <= address + 1'b1;			// increment address and data values
-				data <= address + 1'b1;
+				data <= data + 1'b1;
 				
 				wren <= 1'b1;
 				state <= FILL;
 			
 			end else begin						// when done, disable write and move to done_state
-				address <= 8'd0;
-				data <= 8'd0;
-				wren <= 1'b0;
-				state <= DONE;
-			
+				state <= READ_I;;
 			end // if
 		end // case FILL
+		
+		READ_I: begin
+			wren <= 1'b0;
+			address <= i;	// read i
+			state <= SHUFFLE_LOOP;
+		end // case READ_I
+		
+		SHUFFLE_LOOP: begin
+			if (i < 8'd255) begin
+				i <= i + 1'b1;
+				state <= SHUFFLE_WAIT;
+			end else begin
+				state <= DONE;
+			end // if
+		end // case SHUFFLE
+		
+		SHUFFLE_WAIT: begin
+			data_i <= q;	// load i
+			state <= COMPUTE;
+		end // case POST_SHUFFLE
+		
+		COMPUTE: begin
+			j = (j + data_i + secret_key[2'd2 - (4'd8 * (i % 2'd3)) +: 8]);	// compute j
+			wren <= 1'b0;
+			
+			address <= j;	// read j
+			state <= COMPUTE_WAIT;
+		end // case COMPUTE
+		
+		COMPUTE_WAIT: begin
+			state <= WRITE_I;
+		end // case POST_COMPUTE
+		
+		WRITE_I: begin
+			data_j <= q;	// load j
+			wren <= 1'b1;
+			data <= data_j;
+			address <= i;
+			state <= WRITE_J;
+		end // case WRITE_I
+		
+		WRITE_J: begin
+			wren <= 1'b1;
+			data <= data_i;
+			address <= j;
+			state <= READ_I;
+		end // case WRITE_J
 		
 		/* DONE:
 		 * this state does nothing but loop back into itself
 		 */
 		DONE: begin
-			address <= 8'd0;
-			data <= 8'd0;
-			wren <= 1'b0;
 			state <= DONE;
 		end // case DONE
 	
