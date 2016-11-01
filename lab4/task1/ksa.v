@@ -7,7 +7,7 @@ output [9:0] LEDR;
 
 // states	
 
-enum {INIT, FILL, READ_I, SHUFFLE_LOOP, SHUFFLE_WAIT, COMPUTE, COMPUTE_WAIT, WRITE_I, WRITE_J, DONE} state;
+enum {INIT, FILL, READ_I, WAIT_I, GET_I, COMPUTE_J, COMPUTE_WAIT, WRITE_I, WRITE_J, DONE} state;
 
 // these are signals that connect to the memory
 
@@ -42,7 +42,7 @@ always_ff @(posedge CLOCK_50) begin
 			wren <= 1'b1;
 			
 			i <= 8'd0;
-			j = 8'd0;
+			j <= 8'd0;
 			secret_key <= {{14'd0}, {SW}};
 			state <= FILL;
 		end // case INIT
@@ -62,53 +62,55 @@ always_ff @(posedge CLOCK_50) begin
 				state <= FILL;
 			
 			end else begin						// when done, disable write and move to done_state
-				state <= READ_I;;
+				state <= READ_I;
 			end // if
 		end // case FILL
+		
+		///////////////////////
 		
 		READ_I: begin
 			wren <= 1'b0;
 			address <= i;	// read i
-			state <= SHUFFLE_LOOP;
+			state <= WAIT_I;
 		end // case READ_I
 		
-		SHUFFLE_LOOP: begin
+		WAIT_I: begin
 			if (i < 8'd255) begin
 				i <= i + 1'b1;
-				state <= SHUFFLE_WAIT;
+				state <= GET_I;
 			end else begin
 				state <= DONE;
 			end // if
-		end // case SHUFFLE
+		end // case WAIT_I
 		
-		SHUFFLE_WAIT: begin
+		GET_I: begin
 			data_i <= q;	// load i
-			state <= COMPUTE;
-		end // case POST_SHUFFLE
+			state <= COMPUTE_J;
+		end // case GET_I
 		
-		COMPUTE: begin
-			j = (j + data_i + secret_key[2'd2 - (4'd8 * (i % 2'd3)) +: 8]);	// compute j
+		COMPUTE_J: begin
+			j = (j + data_i + secret_key[5'd23 - (4'd8 * (i % 2'd3)) -: 8]);	// compute j
 			wren <= 1'b0;
 			
 			address <= j;	// read j
 			state <= COMPUTE_WAIT;
-		end // case COMPUTE
+		end // case COMPUTE_J
 		
 		COMPUTE_WAIT: begin
 			state <= WRITE_I;
-		end // case POST_COMPUTE
+		end // case COMPUTE_WAIT
 		
 		WRITE_I: begin
-			data_j <= q;	// load j
+			data_j = q;	// load j
 			wren <= 1'b1;
-			data <= data_j;
+			data <= data_j; // write data_j to i
 			address <= i;
 			state <= WRITE_J;
 		end // case WRITE_I
 		
 		WRITE_J: begin
 			wren <= 1'b1;
-			data <= data_i;
+			data <= data_i;  // write data_i to j
 			address <= j;
 			state <= READ_I;
 		end // case WRITE_J
