@@ -7,7 +7,7 @@ output [9:0] LEDR;
 
 // states	
 
-enum {INIT, FILL, READ_I, WAIT_I, GET_I, COMPUTE_J, COMPUTE_WAIT, WRITE_I, WRITE_J, DONE} state;
+enum {INIT, FILL, READ_I, WAIT_I, COMPUTE_J, COMPUTE_WAIT, WRITE_I, WRITE_J, DONE} state;
 
 // these are signals that connect to the memory
 
@@ -32,6 +32,9 @@ always_ff @(posedge CLOCK_50) begin
 	
 	case (state)
 		
+		///////////////////////
+		// FILL memory with 0-255
+		
 		/* INIT:
 		 * this state initializes our memory filling process,
 		 * and performs the first write at address 0.
@@ -55,7 +58,7 @@ always_ff @(posedge CLOCK_50) begin
 		FILL: begin
 			
 			if (address < 8'd255) begin		// loop back in until done
-				address <= address + 1'b1;			// increment address and data values
+				address <= address + 1'b1;		// increment address and data values
 				data <= data + 1'b1;
 				
 				wren <= 1'b1;
@@ -67,23 +70,31 @@ always_ff @(posedge CLOCK_50) begin
 		end // case FILL
 		
 		///////////////////////
+		// SWAP Memory based on key
 		
+		/* READ_I:
+		 * this state asserts wren to 0 and loads the address of  i
+		 */
 		READ_I: begin
 			wren <= 1'b0;
 			address <= i;	// read i
 			state <= WAIT_I;
 		end // case READ_I
 		
+		/* WAIT_I:
+		 * no-op state after READ_I
+		 */
 		WAIT_I: begin
-			state <= GET_I;
+			state <= COMPUTE_J;
 		end // case WAIT_I
 		
-		GET_I: begin
-			data_i <= q;	// load i
-			state <= COMPUTE_J;
-		end // case GET_I
-		
+		/* COMPUTE_J:
+		 * this state loads the value of i to a register, 
+		 * computes the desired address of j,
+		 * and initializes a read from that address
+		 */
 		COMPUTE_J: begin
+			data_i = q;	// load i
 			j = (j + data_i + secret_key[5'd23 - (4'd8 * (i % 2'd3)) -: 8]);	// compute j
 			wren <= 1'b0;
 			
@@ -91,10 +102,17 @@ always_ff @(posedge CLOCK_50) begin
 			state <= COMPUTE_WAIT;
 		end // case COMPUTE_J
 		
+		/* COMPUTE_WAIT:
+		 * no-op state after COMPUTE_J
+		 */
 		COMPUTE_WAIT: begin
 			state <= WRITE_I;
 		end // case COMPUTE_WAIT
 		
+		/* WRITE_I:
+		 * loads the value of j into its register, 
+		 * and writes  the value at i to memory at address j
+		 */
 		WRITE_I: begin
 			data_j = q;	// load j
 			wren <= 1'b1;
@@ -103,6 +121,10 @@ always_ff @(posedge CLOCK_50) begin
 			state <= WRITE_J;
 		end // case WRITE_I
 		
+		/* WRITE_J:
+		 * writes the value at j to memory at address i, 
+		 * and evaluates whether we should enter the swapping loop or carry on
+		 */
 		WRITE_J: begin
 			wren <= 1'b1;
 			data <= data_i;  // write data_i to j
