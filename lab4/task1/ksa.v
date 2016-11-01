@@ -75,12 +75,7 @@ always_ff @(posedge CLOCK_50) begin
 		end // case READ_I
 		
 		WAIT_I: begin
-			if (i < 8'd255) begin
-				i <= i + 1'b1;
-				state <= GET_I;
-			end else begin
-				state <= DONE;
-			end // if
+			state <= GET_I;
 		end // case WAIT_I
 		
 		GET_I: begin
@@ -112,7 +107,13 @@ always_ff @(posedge CLOCK_50) begin
 			wren <= 1'b1;
 			data <= data_i;  // write data_i to j
 			address <= j;
-			state <= READ_I;
+			
+			if (i < 8'd255) begin
+				i <= i + 1'b1;
+				state <= READ_I;
+			end else begin
+				state <= DONE;
+			end // if
 		end // case WRITE_J
 		
 		/* DONE:
