@@ -8,14 +8,16 @@ output [1:0] LEDG;
 
 // states	
 
-enum {CRACK_INIT, F_INIT, FILL, // FILL stage states
+enum {F_INIT, FILL, // FILL stage states
 		S_READ_I, S_WAIT_I, S_COMPUTE_J, S_COMPUTE_WAIT, S_WRITE_I, S_WRITE_J, // SWAP stage states
 		D_INIT, D_INC_I, D_INC_I_WAIT, D_COMPUTE_J, D_COMPUTE_WAIT, D_WRITE_I, D_WRITE_J, D_READ_F, D_READ_K, D_GET_F, D_WRITE_OUT, // DECRYPT stage states
-		DONE} state;
+		CRACK_INIT, DONE} state;
 
-		
+
+// reset key
 wire reset;
 assign reset = KEY[0];
+
 // Signals that connect to s_memory
 reg [7:0] s_address, s_data, s_q;	
 reg s_wren;
@@ -40,7 +42,6 @@ assign LEDR = secret_key[21-:10];
 
 
 // include S memory structurally
-
 s_memory u0(	.address(s_address), 
 					.clock(CLOCK_50), 
 					.data(s_data), 
@@ -78,8 +79,11 @@ always_ff @(posedge CLOCK_50 or negedge reset) begin
 			LEDG <= 2'b00;
 		end
 		
-		///////////////////////
-		// FILL memory with 0-255
+		
+		////////////////////////////
+		// FILL memory with 0-255 //
+		////////////////////////////
+		
 		
 		/* F_INIT:
 		 * this state initializes our memory filling process,
@@ -116,8 +120,10 @@ always_ff @(posedge CLOCK_50 or negedge reset) begin
 		end // case FILL
 		
 		
-		///////////////////////
-		// SWAP Memory based on key
+		//////////////////////////////
+		// SWAP Memory based on key //
+		//////////////////////////////
+		
 		
 		/* S_READ_I:
 		 * this state asserts s_wren to 0 and loads the address of  i
@@ -186,8 +192,10 @@ always_ff @(posedge CLOCK_50 or negedge reset) begin
 		end // case S_WRITE_J
 		
 		
-		/////////////////////////////
-		// DECRYPT message given key
+		///////////////////////////////
+		// DECRYPT message given key //
+		///////////////////////////////
+		
 		
 		/* D_INIT:
 		 * initializes addresses for decryption stage
@@ -303,15 +311,20 @@ always_ff @(posedge CLOCK_50 or negedge reset) begin
 		D_WRITE_OUT: begin
 		
 			d_result = (data_f ^ e_q);
+			
 			if ((d_result < 8'd97 | d_result > 8'd122) & d_result != 8'd32) begin
+					
 					// if not a lower case letter and not a space this key is incorrect
 					secret_attempt = secret_attempt + 1'b1;
+					
 					if (secret_attempt == 22'd0) begin
 						state <= DONE;
 						LEDG <= 2'b01;
+					
 					end else begin
 						state <= F_INIT;
 					end
+					
 			end else begin 
 			
 				d_wren = 1'b1;	// compute and write decrypted character to d_memory
@@ -321,11 +334,12 @@ always_ff @(posedge CLOCK_50 or negedge reset) begin
 				if (k[4:0] < 5'd31) begin	// loop control: exit once we have completed 32 iterations
 					k <= k + 1'b1;
 					state <= D_INC_I;
+				
 				end else begin
 					LEDG <= 2'b10;
 					state <= DONE;
 				end // if
-			end
+			end // if
 			
 		end // case D_WRITE_OUT
 			
