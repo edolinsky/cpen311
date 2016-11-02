@@ -1,9 +1,10 @@
-module ksa( CLOCK_50, KEY, SW, LEDR);
+module ksa( CLOCK_50, KEY, SW, LEDR, LEDG);
 
 input CLOCK_50;
 input [3:0] KEY;
 input [9:0] SW;
 output [9:0] LEDR;
+output [1:0] LEDG;
 
 // states	
 
@@ -74,6 +75,7 @@ always_ff @(posedge CLOCK_50 or negedge reset) begin
 		CRACK_INIT: begin
 			secret_attempt <= 22'd0;
 			state <= F_INIT;
+			LEDG <= 2'b00;
 		end
 		
 		///////////////////////
@@ -303,8 +305,13 @@ always_ff @(posedge CLOCK_50 or negedge reset) begin
 			d_result = (data_f ^ e_q);
 			if ((d_result < 8'd97 | d_result > 8'd122) & d_result != 8'd32) begin
 					// if not a lower case letter and not a space this key is incorrect
-					secret_attempt <= secret_attempt + 1'b1;
-					state <= F_INIT;
+					secret_attempt = secret_attempt + 1'b1;
+					if (secret_attempt == 22'd0) begin
+						state <= DONE;
+						LEDG <= 2'b01;
+					end else begin
+						state <= F_INIT;
+					end
 			end else begin 
 			
 				d_wren = 1'b1;	// compute and write decrypted character to d_memory
@@ -315,6 +322,7 @@ always_ff @(posedge CLOCK_50 or negedge reset) begin
 					k <= k + 1'b1;
 					state <= D_INC_I;
 				end else begin
+					LEDG <= 2'b10;
 					state <= DONE;
 				end // if
 			end
