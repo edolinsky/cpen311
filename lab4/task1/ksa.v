@@ -7,18 +7,21 @@ output [9:0] LEDR;
 
 // states	
 
-enum {F_INIT, FILL, // FILL stage states
+enum {CRACK_INIT, F_INIT, FILL, // FILL stage states
 		S_READ_I, S_WAIT_I, S_COMPUTE_J, S_COMPUTE_WAIT, S_WRITE_I, S_WRITE_J, // SWAP stage states
 		D_INIT, D_INC_I, D_INC_I_WAIT, D_COMPUTE_J, D_COMPUTE_WAIT, D_WRITE_I, D_WRITE_J, D_READ_F, D_READ_K, D_GET_F, D_WRITE_OUT, // DECRYPT stage states
 		DONE} state;
 
+		
+wire reset;
+assign reset = KEY[0];
 // Signals that connect to s_memory
 reg [7:0] s_address, s_data, s_q;	
 reg s_wren;
 
 // Signals that connect to d_memory
 reg [4:0] d_address;
-reg [7:0] d_data, d_q;	
+reg [7:0] d_result, d_data, d_q;	
 reg d_wren;
 
 // Signals that connect to e_ROM
@@ -31,7 +34,9 @@ reg [7:0] data_i, data_j, data_f, data_k;	// values corresponding to above addre
 
 // secret key (display least significant 10 bits on LEDs)
 reg [23:0] secret_key;
-assign LEDR = secret_key[9:0];
+reg [21:0] secret_attempt;
+assign LEDR = secret_key[21-:10];
+
 
 // include S memory structurally
 
@@ -55,9 +60,21 @@ e_ROM u2(		.address(e_address),
 					.q(e_q));
 // This code drives the address, data, and wren signals to fill the memory with the values 0..255.
 
-always_ff @(posedge CLOCK_50) begin
+always_ff @(posedge CLOCK_50 or negedge reset) begin
+
+	if (reset == 0) begin
+		state <= CRACK_INIT;
+	end else begin
 	
 	case (state)
+	
+		/* CRACK_INIT 
+		 * this state initializes the attempted key to 0
+		 */
+		CRACK_INIT: begin
+			secret_attempt <= 22'd0;
+			state <= F_INIT;
+		end
 		
 		///////////////////////
 		// FILL memory with 0-255
@@ -73,7 +90,7 @@ always_ff @(posedge CLOCK_50) begin
 			
 			i <= 8'd0;
 			j <= 8'd0;
-			secret_key <= {{14'd0}, {SW}};
+			secret_key <= {{2'd0}, secret_attempt};
 			state <= FILL;
 		end // case F_INIT
 		
@@ -283,16 +300,24 @@ always_ff @(posedge CLOCK_50) begin
 		 */
 		D_WRITE_OUT: begin
 		
-			d_wren = 1'b1;	// compute and write decrypted character to d_memory
-			d_data = (data_f ^ e_q);
-			d_address = k[4:0];
+			d_result = (data_f ^ e_q);
+			if ((d_result < 8'd97 | d_result > 8'd122) & d_result != 8'd32) begin
+					// if not a lower case letter and not a space this key is incorrect
+					secret_attempt <= secret_attempt + 1'b1;
+					state <= F_INIT;
+			end else begin 
 			
-			if (k[4:0] < 5'd31) begin	// loop control: exit once we have completed 32 iterations
-				k <= k + 1'b1;
-				state <= D_INC_I;
-			end else begin
-				state <= DONE;
-			end // if
+				d_wren = 1'b1;	// compute and write decrypted character to d_memory
+				d_data = d_result;
+				d_address = k[4:0];
+				
+				if (k[4:0] < 5'd31) begin	// loop control: exit once we have completed 32 iterations
+					k <= k + 1'b1;
+					state <= D_INC_I;
+				end else begin
+					state <= DONE;
+				end // if
+			end
 			
 		end // case D_WRITE_OUT
 			
@@ -304,6 +329,8 @@ always_ff @(posedge CLOCK_50) begin
 		end // case DONE
 	
 	endcase
+	
+	end
 end // always_ff
 
 
