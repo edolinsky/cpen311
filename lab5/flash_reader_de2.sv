@@ -7,8 +7,7 @@ module flash_reader_de2( CLOCK_50, resetb,
     FL_WE_N,
 	 data,
 	 valid,
-	 next,
-	 done
+	 next
 	 );
   
 input CLOCK_50;
@@ -24,11 +23,11 @@ output FL_RST_N;			// Flash hardware reset
 output FL_WE_N;			// Flash write enable
 
 output [15:0] data;
-output valid, done;
+output valid;
 input next;
 
 // State machine states
-enum {FL_INIT, FL_READ, FL_WAIT, FL_LOAD, FL_LOOP_CONTROL, WAIT, DONE} state;
+enum {FL_INIT, FL_READ, FL_WAIT, FL_LOAD, FL_LOOP_CONTROL, WAIT} state;
 
 // Do not need to reset, nor write to flash
 assign FL_WE_N = 1'b1;	// high write enable for flash read
@@ -39,7 +38,7 @@ parameter WAIT_CYCLES = 3'd6; // minimum 110ns read time, so wait 6 cycles in be
 reg [2:0] wait_reg;	// register for number of cycles in 
 
 // RAM & intermediary registers
-reg [7:0] f_address;
+reg [23:0] f_address;
 reg [15:0] f_data;
 reg addr_offset;
 
@@ -47,7 +46,6 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 
 	if(resetb == 0) begin
 		state <= FL_INIT;
-		done <= 0;
 		valid <= 0;
 	end else begin
 	
@@ -63,7 +61,6 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 			
 			data <= 16'd0; // init data to 0
 			valid <= 1'b0; // init valid flag to 0
-			done <= 1'b0;
 			
 			state <= FL_READ;
 		end // case FL_INIT
@@ -133,11 +130,11 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 		 */
 		FL_LOOP_CONTROL: begin
 			
-			if (f_address < 8'd255) begin
+			if (f_address < 21'h1FFFFF) begin
 				f_address <= f_address + 1'b1;
 				state <= WAIT;
 			end else begin
-				state <= DONE;
+				state <= FL_INIT;
 			end // if
 		
 		end // case FL_LOOP_CONTROL
@@ -151,12 +148,6 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 				state <= FL_READ; // read next value
 			end
 		end // case WAIT
-		
-		DONE: begin
-			state <= DONE;
-			done <= 1'b1;
-			valid <= 1'b1;
-		end // case DONE
 		
 	endcase
 	

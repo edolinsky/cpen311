@@ -17,7 +17,7 @@ output FL_RST_N;			// Flash hardware reset
 output FL_WE_N;			// Flash write enable
 
 // states
-enum {WAIT_UNTIL_READY, COLLECT_SAMPLE, SEND_SAMPLE, WAIT_FOR_ACCEPTED, DONE} state;
+enum {WAIT_UNTIL_READY, COLLECT_SAMPLE, SEND_SAMPLE, WAIT_FOR_ACCEPTED} state;
 
 // signals that are used to communicate with the audio core
 reg read_ready, write_ready, write_s;
@@ -39,9 +39,9 @@ assign read_s = 1'b0;
 
 // flash reader singals
 reg [15:0] data, sample;
-wire valid, next, done;
+wire valid, next;
 // instantiate flash memory reader
-flash_reader_de2 flash_reader( CLOCK_50, reset, FL_ADDR, FL_CE_N, FL_DQ, FL_OE_N, FL_RST_N, FL_WE_N, data, valid, next, done);
+flash_reader_de2 flash_reader( CLOCK_50, reset, FL_ADDR, FL_CE_N, FL_DQ, FL_OE_N, FL_RST_N, FL_WE_N, data, valid, next);
 	
 always_ff @(posedge CLOCK_50, posedge reset)
 	if (reset == 1'b1) begin
@@ -70,14 +70,9 @@ always_ff @(posedge CLOCK_50, posedge reset)
 		COLLECT_SAMPLE : begin
 			
 			if (valid == 1'b1) begin
-				
-				if (done == 1'b1) begin
-					state <= DONE;
-				end else begin 
-					sample <= data;
-					next <= 1'b1;
-					state <= SEND_SAMPLE;
-				end
+				sample <= data;
+				next <= 1'b1;
+				state <= SEND_SAMPLE;
 			end
 		end
 
@@ -103,10 +98,6 @@ always_ff @(posedge CLOCK_50, posedge reset)
 			end
 
 		end // WAIT_FOR_ACCEPTED
-		
-		DONE: begin
-			state <= DONE;
-		end
 
 		default: begin
 			state <= WAIT_UNTIL_READY;
