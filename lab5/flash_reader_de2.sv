@@ -32,6 +32,7 @@ reg [2:0] wait_reg;	// register for number of cycles in
 
 reg [23:0] f_address;
 reg [15:0] f_data;
+reg signed [16:0] signed_sample;
 reg addr_offset;
 
 // signals that are used to communicate with the audio core
@@ -67,7 +68,7 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 		 * This state initializes registers needed for loading data from flash
 		 */
 		FL_INIT: begin
-			f_address <= 8'd0;	// initialize address to 0
+			f_address <= 24'd0;	// initialize address to 0
 			addr_offset <= 1'b0;	// initialize flash offset address to 0
 			wait_reg <= 3'd0;		// initialize wait counter to 0
 			
@@ -126,6 +127,7 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 			end else begin
 				addr_offset <= 1'b0;
 				
+				signed_sample <= $signed(f_data)/$signed(8'd64);
 				// start write handshake
 				
 				state <= WAIT_READY;
@@ -141,8 +143,8 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 		
 		SEND_SAMPLE: begin
 		
-			writedata_left <= f_data;
-			writedata_right <= f_data;
+			writedata_left <= signed_sample;
+			writedata_right <= signed_sample;
 			write_s <= 1'b1;
 			state <= WAIT_ACCEPTED;
 		end
@@ -164,7 +166,7 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 				f_address <= f_address + 1'b1;
 				state <= FL_READ;
 			end else begin
-				state <= DONE;
+				state <= FL_INIT;
 			end // if
 		
 		end // case FL_LOOP_CONTROL
