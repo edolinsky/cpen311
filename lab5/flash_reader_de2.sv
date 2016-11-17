@@ -155,6 +155,7 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 		DONE: begin
 			state <= DONE;
 			done <= 1'b1;
+			valid <= 1'b1;
 		end // case DONE
 		
 	endcase
