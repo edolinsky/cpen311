@@ -47,6 +47,8 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 
 	if(resetb == 0) begin
 		state <= FL_INIT;
+		done <= 0;
+		valid <= 0;
 	end else begin
 	
 	case (state)

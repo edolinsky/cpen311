@@ -1,7 +1,9 @@
-module lab5(CLOCK_50, CLOCK_27, KEY, FL_ADDR, FL_CE_N, FL_DQ, FL_OE_N, FL_RST_N, FL_WE_N);
+module lab5(CLOCK_50, CLOCK_27, KEY, FL_ADDR, FL_CE_N, FL_DQ, FL_OE_N, FL_RST_N, FL_WE_N,
+AUD_DACLRCK, AUD_ADCLRCK, AUD_BCLK, AUD_ADCDAT, I2C_SDAT, I2C_SCLK, AUD_DACDAT, AUD_XCK);
 
-input CLOCK_50;
-input CLOCK_27;
+input CLOCK_50, CLOCK_27, AUD_DACLRCK, AUD_ADCLRCK, AUD_BCLK, AUD_ADCDAT;
+inout I2C_SDAT;
+output I2C_SCLK,AUD_DACDAT,AUD_XCK;
 input [3:0] KEY;
 
 output [21:0] FL_ADDR;	// Flash address bus
@@ -30,6 +32,11 @@ wire reset, read_s;
 clock_generator my_clock_gen (CLOCK_27, reset, AUD_XCK);
 audio_and_video_config cfg (CLOCK_50, reset, I2C_SDAT, I2C_SCLK);
 audio_codec codec (CLOCK_50,reset,read_s,write_s,writedata_left, writedata_right,AUD_ADCDAT,AUD_BCLK,AUD_ADCLRCK,AUD_DACLRCK,read_ready, write_ready,readdata_left, readdata_right,AUD_DACDAT);
+
+assign reset = ~resetb;
+
+// we will never read from the microphone in this lab, so we might as well set read_s to 0.
+assign read_s = 1'b0;
 
 // flash reader signals
 wire [15:0] f_data, sample;
