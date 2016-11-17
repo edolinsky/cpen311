@@ -1,8 +1,9 @@
-module flash_reader_de2( CLOCK_50, CLOCK_27, KEY, FL_ADDR, FL_CE_N, FL_DQ, FL_OE_N, FL_RST_N, FL_WE_N,
+module flash_reader_de2( CLOCK_50, CLOCK_27, KEY, SW, FL_ADDR, FL_CE_N, FL_DQ, FL_OE_N, FL_RST_N, FL_WE_N,
          AUD_DACLRCK, AUD_ADCLRCK, AUD_BCLK,AUD_ADCDAT, I2C_SDAT, I2C_SCLK, AUD_DACDAT, AUD_XCK);
 
 input CLOCK_50,CLOCK_27,AUD_DACLRCK, AUD_ADCLRCK, AUD_BCLK,AUD_ADCDAT;
 input [3:0] KEY;
+input [1:0] SW;
 inout I2C_SDAT;
 output I2C_SCLK,AUD_DACDAT,AUD_XCK;
 
@@ -16,7 +17,7 @@ output FL_RST_N;			// Flash hardware reset
 output FL_WE_N;			// Flash write enable
 
 // State machine states
-enum {FL_INIT, FL_READ, FL_WAIT, FL_LOAD, FL_LOOP_CONTROL, WAIT_READY, SEND_SAMPLE, WAIT_ACCEPTED, DONE} state;
+enum {FL_INIT, FL_READ, FL_WAIT, FL_LOAD, FL_LOOP_CONTROL, WAIT_READY, SEND_SAMPLE, WAIT_ACCEPTED, TURTLE, DONE} state;
 
 // clock & reset
 wire resetb;
@@ -54,6 +55,11 @@ s_memory s0(.address(f_address),
 				.data(s_data),
 				.wren(s_wren),
 				.q(s_q));
+				
+// challenge mode
+wire chipmunk, chipmunk_counter, turtle, turtle_counter;
+assign chipmunk = SW[0];
+assign turtle = SW[1];
 
 always_ff @(posedge CLOCK_50, negedge resetb) begin
 
@@ -72,6 +78,9 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 			addr_offset <= 1'b0;	// initialize flash offset address to 0
 			wait_reg <= 3'd0;		// initialize wait counter to 0
 			
+			
+			chipmunk_counter <= 1'b0;
+			turtle_counter <= 1'b0;
 			state <= FL_READ;
 		end // case FL_INIT
 		
@@ -130,7 +139,19 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 				signed_sample <= $signed(f_data)/$signed(8'd64);
 				// start write handshake
 				
-				state <= WAIT_READY;
+				if (turtle == 1'b0 && chipmunk == 1'b1) begin
+				
+					if (chipmunk_counter == 1'b0) begin
+						state <= FL_LOOP_CONTROL;
+						chipmunk_counter <= 1'b1;
+					end else begin
+						state <= WAIT_READY;
+						chipmunk_counter <= 1'b0;
+					end
+					
+				end else begin
+					state <= WAIT_READY;
+				end
 			end // if
 		end // case FL_LOAD
 		
@@ -151,9 +172,30 @@ always_ff @(posedge CLOCK_50, negedge resetb) begin
 		
 		WAIT_ACCEPTED: begin
 			if (write_ready == 1'b0) begin
-				state <= FL_LOOP_CONTROL;
+			
+				if (turtle == 1'b1 && chipmunk == 1'b0) begin
+					if (turtle_counter == 1'b0) begin
+						state <= TURTLE;
+						turtle_counter <= 1'b1;
+					end else begin
+						state <= FL_LOOP_CONTROL;
+						turtle_counter <= 1'b0;
+					end
+					
+				end else begin
+					state <= FL_LOOP_CONTROL;
+				end
 			end
 		end
+		
+		/* TURTLE:
+		 * This state is a surrugate loop control for playing a sample twice
+		 */
+		TURTLE: begin
+			write_s <= 1'b0;
+			state <= WAIT_READY;
+		end
+			
 		
 		/* FL_LOOP_CONTROL
 		 * This state determines whether we need to continue reading information,
